@@ -24,9 +24,25 @@
   gap: 16px;
 }
 
-.email {
-  color: var(--text-dim);
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
+  color: var(--text-dim);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+.status-in .status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
 }
 
 .sign-out {
@@ -46,24 +62,8 @@
   background-color: rgba(59, 130, 246, 0.1);
 }
 
-.hero {
+.board-main {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  text-align: center;
-  padding: 24px;
-}
-
-.hero h1 {
-  font-size: 40px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.hero p {
-  color: var(--text-dim);
-  font-size: 16px;
+  min-height: 0;
 }
