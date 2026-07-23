@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Task, TaskStatus } from '../types';
-import { createTask, listTasks, updateTask, TASK_STATUSES } from '../api';
+import { createTask, listTasks, subscribeToTasks, updateTask, TASK_STATUSES } from '../api';
 import { useOnlineStatus } from '../useOnlineStatus';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskDetail } from './TaskDetail';
@@ -15,6 +15,8 @@ export function KanbanBoard() {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const isOnline = useOnlineStatus();
 
+  // Manual fallback used for offline reads (served from the local cache)
+  // and to recover from a failed drag-and-drop move.
   const refresh = useCallback(async () => {
     try {
       setTasks(await listTasks());
@@ -27,9 +29,26 @@ export function KanbanBoard() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
-    refresh();
-  }, [refresh]);
+    if (!isOnline) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- offline fallback load
+      refresh();
+      return;
+    }
+
+    const unsubscribe = subscribeToTasks(
+      (liveTasks) => {
+        setTasks(liveTasks);
+        setError(null);
+        setIsLoading(false);
+      },
+      () => {
+        setError('Could not load tasks.');
+        setIsLoading(false);
+      },
+    );
+
+    return unsubscribe;
+  }, [isOnline, refresh]);
 
   async function handleDrop(status: TaskStatus) {
     if (!draggedTaskId) return;

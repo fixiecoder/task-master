@@ -1,5 +1,6 @@
 import { getIdToken } from 'firebase/auth';
-import { auth } from './firebase';
+import { collection, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import type { Task, TaskStatus } from './types';
 import { cacheTask, cacheTasks, getCachedTask, getCachedTasks } from './db';
 
@@ -35,6 +36,32 @@ export async function listTasks(): Promise<Task[]> {
     if (cached.length > 0) return cached;
     throw err;
   }
+}
+
+// Live-syncs the signed-in user's tasks across devices: any create/update
+// made through the REST API (here or elsewhere) writes to this same
+// Firestore collection, so this listener picks it up almost immediately.
+export function subscribeToTasks(
+  onChange: (tasks: Task[]) => void,
+  onError: (err: unknown) => void,
+): Unsubscribe {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const tasksQuery = query(
+    collection(db, 'users', user.uid, 'tasks'),
+    orderBy('updatedAt', 'desc'),
+  );
+
+  return onSnapshot(
+    tasksQuery,
+    (snapshot) => {
+      const tasks = snapshot.docs.map((doc) => doc.data() as Task);
+      cacheTasks(tasks);
+      onChange(tasks);
+    },
+    onError,
+  );
 }
 
 export async function getTask(id: string): Promise<Task> {

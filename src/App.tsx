@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from './firebase';
 import { KanbanBoard } from './components/KanbanBoard';
 import './App.css';
@@ -20,11 +20,6 @@ function App() {
             <span className="status-dot" />
             {isSignedIn ? `Signed in as ${user.email}` : 'Signed out'}
           </span>
-          {isSignedIn && (
-            <button type="button" className="sign-out" onClick={() => signOut(auth)}>
-              Sign out
-            </button>
-          )}
         </div>
       </header>
 
