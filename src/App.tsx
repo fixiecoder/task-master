@@ -16,9 +16,12 @@ function App() {
       <header className="topbar">
         <span className="brand">Task Master</span>
         <div className="account">
-          <span className={`status ${isSignedIn ? 'status-in' : 'status-out'}`}>
+          <span
+            className={`status ${isSignedIn ? 'status-in' : 'status-out'}`}
+            title={isSignedIn ? user.email ?? undefined : undefined}
+          >
             <span className="status-dot" />
-            {isSignedIn ? `Signed in as ${user.email}` : 'Signed out'}
+            {isSignedIn ? 'Signed in' : 'Signed out'}
           </span>
         </div>
       </header>

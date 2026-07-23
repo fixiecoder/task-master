@@ -32,6 +32,7 @@ export function PromptBar({ onTasksChanged }: PromptBarProps) {
   return (
     <div className="prompt-bar-wrap">
       <form className="prompt-bar" onSubmit={handleSubmit}>
+        <span className="prompt-bar-prefix" aria-hidden="true">›</span>
         <input
           type="text"
           value={message}

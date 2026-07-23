@@ -1,22 +1,46 @@
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: #eff6ff;
-  background-color: #0f172a;
+  color: var(--chalk);
+  background-color: var(--board);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --accent: #3b82f6;
-  --accent-dim: #1d4ed8;
-  --panel-bg: rgba(15, 23, 42, 0.85);
-  --panel-border: rgba(255, 255, 255, 0.1);
-  --text-dim: #94a3b8;
+  /* Dispatch board palette — chalkboard shell, kraft-paper tickets, ink stamps. */
+  --board: #16211b;
+  --board-raised: #1c2a22;
+  --kraft: #eae1cc;
+  --kraft-dim: #ded2ab;
+  --ink: #241f16;
+  --ink-dim: #5c5847;
+  --chalk: #f2eee2;
+  --chalk-dim: #90a396;
+  --rule: rgba(242, 238, 226, 0.12);
+
+  --stamp: #b4402a;
+  --stamp-dim: #8a2f1d;
+  --ochre: #c1862e;
+  --pine: #4b7a5e;
+
+  --terminal-bg: #0b1210;
+  --terminal-text: #8fe3b0;
+  --terminal-text-dim: #4f7d63;
+
+  --font-display: 'Barlow Condensed', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+  /* legacy aliases still referenced by component CSS during the redesign */
+  --accent: var(--stamp);
+  --accent-dim: var(--stamp-dim);
+  --panel-bg: var(--board-raised);
+  --panel-border: var(--rule);
+  --text-dim: var(--chalk-dim);
 }
 
 * {
@@ -27,6 +51,9 @@
 
 body {
   min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, rgba(242, 238, 226, 0.04), transparent 60%),
+    var(--board);
 }
 
 #root {

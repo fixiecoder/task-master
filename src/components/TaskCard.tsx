@@ -96,7 +96,9 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
       onDragStart={() => onDragStart(task)}
       onClick={() => onOpen(task)}
     >
-      <span className="task-card-title">{task.title}</span>
+      <span className="task-card-body">
+        <span className="task-card-title">{task.title}</span>
+      </span>
       {task.notes && <span className="task-card-notes-dot" title="Has notes" />}
     </button>
   );

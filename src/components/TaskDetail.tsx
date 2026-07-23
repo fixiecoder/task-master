@@ -270,7 +270,7 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Talk through the plan, then ask me to update the notes…"
+                  placeholder="Ask about this task…"
                   disabled={isChatting}
                 />
                 <button type="submit" disabled={isChatting || !chatInput.trim()}>
