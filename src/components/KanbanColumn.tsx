@@ -15,9 +15,20 @@ interface KanbanColumnProps {
   onDragStart: (task: Task) => void;
   onDrop: (status: TaskStatus) => void;
   onQuickAdd: (title: string) => void;
+  isTouchDragOver: boolean;
+  onTouchHover: (status: TaskStatus | null) => void;
 }
 
-export function KanbanColumn({ status, tasks, onOpenTask, onDragStart, onDrop, onQuickAdd }: KanbanColumnProps) {
+export function KanbanColumn({
+  status,
+  tasks,
+  onOpenTask,
+  onDragStart,
+  onDrop,
+  onQuickAdd,
+  isTouchDragOver,
+  onTouchHover,
+}: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [draft, setDraft] = useState('');
 
@@ -31,7 +42,8 @@ export function KanbanColumn({ status, tasks, onOpenTask, onDragStart, onDrop, o
 
   return (
     <section
-      className={`kanban-column status-${status} ${isDragOver ? 'drag-over' : ''}`}
+      className={`kanban-column status-${status} ${isDragOver || isTouchDragOver ? 'drag-over' : ''}`}
+      data-kanban-status={status}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragOver(true);
@@ -50,7 +62,14 @@ export function KanbanColumn({ status, tasks, onOpenTask, onDragStart, onDrop, o
 
       <div className="kanban-column-cards">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onOpen={onOpenTask} onDragStart={onDragStart} />
+          <TaskCard
+            key={task.id}
+            task={task}
+            onOpen={onOpenTask}
+            onDragStart={onDragStart}
+            onTouchDrop={onDrop}
+            onTouchHover={onTouchHover}
+          />
         ))}
       </div>
 

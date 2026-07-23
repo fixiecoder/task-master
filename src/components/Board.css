@@ -192,6 +192,10 @@
   padding: 10px 12px;
   cursor: grab;
   transition: border-color 0.15s, background-color 0.15s;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .task-card:hover {
@@ -201,6 +205,13 @@
 
 .task-card:active {
   cursor: grabbing;
+}
+
+.task-card.touch-dragging {
+  opacity: 0.6;
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+  transform: scale(0.98);
 }
 
 .task-card-title {
@@ -237,7 +248,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .task-detail-header {
@@ -307,7 +318,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.task-detail-notes.notes-collapsed {
+  flex: 0 1 auto;
+  max-height: 200px;
 }
 
 .task-detail-notes-header {
@@ -393,8 +411,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 0 0 auto;
   border-top: 1px solid var(--panel-border);
   padding-top: 16px;
+}
+
+.task-chat.task-chat-open {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .task-chat-header {
@@ -404,6 +428,34 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-dim);
+}
+
+.task-chat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.task-chat-toggle:hover {
+  color: #eff6ff;
+}
+
+.task-chat-chevron {
+  display: inline-flex;
+  font-size: 11px;
+  transition: transform 0.15s;
+}
+
+.task-chat-chevron.open {
+  transform: rotate(90deg);
 }
 
 .task-chat-header-actions {
@@ -475,7 +527,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 260px;
+  flex: 1 1 auto;
+  min-height: 80px;
   overflow-y: auto;
 }
 

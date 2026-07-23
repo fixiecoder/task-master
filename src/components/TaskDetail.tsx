@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Task, TaskStatus } from '../types';
 import {
@@ -59,10 +59,19 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
   const [isChatting, setIsChatting] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const chatThreadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isChatOpen) return;
+    const el = chatThreadRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [isChatOpen, chatMessages, isChatting]);
 
   const isDirty = title !== task.title || status !== task.status || notes !== (task.notes ?? '');
 
@@ -161,7 +170,7 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
           ))}
         </div>
 
-        <div className="task-detail-notes">
+        <div className={`task-detail-notes ${isOnline && isChatOpen ? 'notes-collapsed' : ''}`}>
           <div className="task-detail-notes-header">
             <span>Notes</span>
             {!isEditingNotes && (
@@ -188,74 +197,88 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
         </div>
 
         {isOnline ? (
-        <div className="task-chat">
+        <div className={`task-chat ${isChatOpen ? 'task-chat-open' : ''}`}>
           <div className="task-chat-header">
-            <span>Ask AI</span>
-            <div className="task-chat-header-actions">
-              <button type="button" className="link-button" onClick={handleNewChat}>
-                New chat
-              </button>
-              <div className="task-chat-history">
-                <button type="button" className="link-button" onClick={handleToggleHistory}>
-                  History
+            <button
+              type="button"
+              className="task-chat-toggle"
+              onClick={() => setIsChatOpen((o) => !o)}
+              aria-expanded={isChatOpen}
+            >
+              <span className={`task-chat-chevron ${isChatOpen ? 'open' : ''}`}>›</span>
+              <span>Ask AI</span>
+            </button>
+            {isChatOpen && (
+              <div className="task-chat-header-actions">
+                <button type="button" className="link-button" onClick={handleNewChat}>
+                  New chat
                 </button>
-                {isHistoryOpen && (
-                  <div className="task-chat-history-popout">
-                    {isLoadingHistory ? (
-                      <p className="task-chat-history-empty">Loading…</p>
-                    ) : historyError ? (
-                      <p className="task-chat-history-empty">{historyError}</p>
-                    ) : !history || history.length === 0 ? (
-                      <p className="task-chat-history-empty">No past conversations yet.</p>
-                    ) : (
-                      history.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          className={`task-chat-history-item ${c.id === conversationId ? 'active' : ''}`}
-                          onClick={() => handleSelectConversation(c)}
-                        >
-                          <span className="task-chat-history-item-title">{c.title}</span>
-                          <span className="task-chat-history-item-time">{formatRelativeTime(c.updatedAt)}</span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {chatMessages.length > 0 && (
-            <div className="task-chat-thread">
-              {chatMessages.map((m, i) => (
-                <div key={i} className={`task-chat-message task-chat-message-${m.role}`}>
-                  {m.role === 'assistant' ? (
-                    <div className="markdown-preview">
-                      <ReactMarkdown>{normalizeMarkdown(m.content)}</ReactMarkdown>
+                <div className="task-chat-history">
+                  <button type="button" className="link-button" onClick={handleToggleHistory}>
+                    History
+                  </button>
+                  {isHistoryOpen && (
+                    <div className="task-chat-history-popout">
+                      {isLoadingHistory ? (
+                        <p className="task-chat-history-empty">Loading…</p>
+                      ) : historyError ? (
+                        <p className="task-chat-history-empty">{historyError}</p>
+                      ) : !history || history.length === 0 ? (
+                        <p className="task-chat-history-empty">No past conversations yet.</p>
+                      ) : (
+                        history.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`task-chat-history-item ${c.id === conversationId ? 'active' : ''}`}
+                            onClick={() => handleSelectConversation(c)}
+                          >
+                            <span className="task-chat-history-item-title">{c.title}</span>
+                            <span className="task-chat-history-item-time">{formatRelativeTime(c.updatedAt)}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
-                  ) : (
-                    m.content
                   )}
                 </div>
-              ))}
-              {isChatting && <div className="task-chat-message task-chat-message-assistant">Thinking…</div>}
-            </div>
-          )}
-          {chatError && <p className="task-chat-error">{chatError}</p>}
+              </div>
+            )}
+          </div>
 
-          <form className="task-chat-form" onSubmit={handleChatSubmit}>
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Talk through the plan, then ask me to update the notes…"
-              disabled={isChatting}
-            />
-            <button type="submit" disabled={isChatting || !chatInput.trim()}>
-              {isChatting ? 'Sending…' : 'Send'}
-            </button>
-          </form>
+          {isChatOpen && (
+            <>
+              {chatMessages.length > 0 && (
+                <div className="task-chat-thread" ref={chatThreadRef}>
+                  {chatMessages.map((m, i) => (
+                    <div key={i} className={`task-chat-message task-chat-message-${m.role}`}>
+                      {m.role === 'assistant' ? (
+                        <div className="markdown-preview">
+                          <ReactMarkdown>{normalizeMarkdown(m.content)}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        m.content
+                      )}
+                    </div>
+                  ))}
+                  {isChatting && <div className="task-chat-message task-chat-message-assistant">Thinking…</div>}
+                </div>
+              )}
+              {chatError && <p className="task-chat-error">{chatError}</p>}
+
+              <form className="task-chat-form" onSubmit={handleChatSubmit}>
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Talk through the plan, then ask me to update the notes…"
+                  disabled={isChatting}
+                />
+                <button type="submit" disabled={isChatting || !chatInput.trim()}>
+                  {isChatting ? 'Sending…' : 'Send'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
         ) : (
           <p className="task-chat-offline">Ask AI is unavailable while offline.</p>

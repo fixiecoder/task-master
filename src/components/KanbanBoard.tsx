@@ -13,6 +13,7 @@ export function KanbanBoard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [touchDragOverStatus, setTouchDragOverStatus] = useState<TaskStatus | null>(null);
   const isOnline = useOnlineStatus();
 
   // Manual fallback used for offline reads (served from the local cache)
@@ -106,6 +107,8 @@ export function KanbanBoard() {
               onDragStart={(task) => setDraggedTaskId(task.id)}
               onDrop={handleDrop}
               onQuickAdd={handleQuickAdd}
+              isTouchDragOver={touchDragOverStatus === status}
+              onTouchHover={setTouchDragOverStatus}
             />
           ))}
         </div>
