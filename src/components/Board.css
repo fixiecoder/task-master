@@ -96,6 +96,60 @@
   padding-left: 16px;
 }
 
+.prompt-reply-reset {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--terminal-text-dim);
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 10px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.prompt-reply-reset:hover {
+  color: var(--terminal-text);
+}
+
+.prompt-duration-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-left: 16px;
+}
+
+.prompt-duration-option {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--terminal-text);
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-text-dim);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.prompt-duration-option:hover:not(:disabled) {
+  border-color: var(--terminal-text);
+}
+
+.prompt-duration-option:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.prompt-duration-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--terminal-text-dim);
+  margin-left: 4px;
+}
+
 .board-error {
   color: #e0715a;
   font-size: 14px;

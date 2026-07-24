@@ -118,12 +118,17 @@ export async function deleteTask(id: string): Promise<void> {
 export interface PromptResponse {
   reply: string;
   taskIds?: string[];
+  conversationId: string;
+  askDuration?: boolean;
 }
 
-export async function sendPrompt(message: string): Promise<PromptResponse> {
+export async function sendPrompt(
+  message: string,
+  conversationId?: string,
+): Promise<PromptResponse> {
   const res = await apiFetch('/tasks/prompt', {
     method: 'POST',
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, conversationId }),
   });
   if (!res.ok) throw new Error(`sendPrompt failed: ${res.status}`);
   return res.json() as Promise<PromptResponse>;
