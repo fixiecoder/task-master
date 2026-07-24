@@ -54,6 +54,17 @@ export async function getCachedTasks(): Promise<Task[]> {
   return tasks;
 }
 
+export async function deleteCachedTask(id: string): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(TASKS_STORE, 'readwrite');
+    tx.objectStore(TASKS_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
 export async function getCachedTask(id: string): Promise<Task | undefined> {
   const db = await openDB();
   const task = await new Promise<Task | undefined>((resolve, reject) => {

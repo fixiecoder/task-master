@@ -1,0 +1,21 @@
+.progress-bar {
+  display: flex;
+  width: 100%;
+  height: 6px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(36, 31, 22, 0.12);
+  margin-top: 6px;
+}
+
+.progress-segment {
+  height: 100%;
+}
+
+.progress-segment + .progress-segment {
+  border-left: 1px solid rgba(36, 31, 22, 0.35);
+}
+
+.progress-green { background: var(--pine); }
+.progress-amber { background: var(--ochre); }
+.progress-red { background: var(--stamp); }

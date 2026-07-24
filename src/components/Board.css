@@ -376,6 +376,152 @@
 .status-pill.status-in_progress.active { color: var(--ochre); border-color: var(--ochre); }
 .status-pill.status-done.active { color: var(--pine); border-color: var(--pine); }
 
+/* ---- Task detail: dates & planned-work sessions ---- */
+
+.task-detail-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  border-top: 1px dashed var(--ink-dim);
+  border-bottom: 1px dashed var(--ink-dim);
+  padding: 14px 0;
+}
+
+.task-detail-dates-header {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.task-detail-dates-empty {
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
+.task-date-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.task-date-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.task-date-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--status-color, var(--ink-dim));
+}
+
+.task-date-start .task-date-dot { --status-color: var(--pine); }
+.task-date-due .task-date-dot { --status-color: var(--stamp); }
+.task-date-planned_work .task-date-dot { --status-color: var(--ochre); }
+
+.task-date-type {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  min-width: 92px;
+}
+
+.task-date-value {
+  font-family: var(--font-mono);
+}
+
+.task-date-duration {
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+
+.task-date-remove {
+  margin-left: auto;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.task-date-remove:hover {
+  color: var(--stamp);
+}
+
+.task-date-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-date-form select,
+.task-date-form input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: #f5efde;
+  border: 1px solid rgba(36, 31, 22, 0.2);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
+.task-date-form input[type='number'] {
+  width: 84px;
+}
+
+.task-date-form button {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--kraft);
+  background: var(--stamp);
+  border: 1px solid var(--stamp);
+  border-radius: 3px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.task-date-form button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.task-detail-estimate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.task-detail-estimate input {
+  width: 80px;
+  font: inherit;
+  color: var(--ink);
+  background: #f5efde;
+  border: 1px solid rgba(36, 31, 22, 0.2);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
 .task-detail-notes {
   display: flex;
   flex-direction: column;
@@ -706,11 +852,54 @@
 
 .task-detail-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px dashed var(--ink-dim);
+}
+
+.task-detail-footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.task-detail-delete {
+  color: var(--ink-dim);
+}
+
+.task-detail-delete:hover:not(:disabled) {
+  color: #b0392b;
+}
+
+.task-detail-delete:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.task-detail-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.task-detail-footer .danger {
+  color: var(--kraft);
+  background: #b0392b;
+  border: 1px solid #b0392b;
+}
+
+.task-detail-footer .danger:hover:not(:disabled) {
+  background: #94301f;
+}
+
+.task-detail-footer .danger:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .task-detail-footer button {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Task, TaskStatus } from '../types';
+import { ProgressBar } from './ProgressBar';
 
 interface TaskCardProps {
   task: Task;
@@ -98,6 +99,7 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
     >
       <span className="task-card-body">
         <span className="task-card-title">{task.title}</span>
+        <ProgressBar task={task} />
       </span>
       {task.notes && <span className="task-card-notes-dot" title="Has notes" />}
     </button>

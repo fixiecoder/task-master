@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from './firebase';
 import { KanbanBoard } from './components/KanbanBoard';
+import { CalendarPage } from './components/CalendarPage';
+import { NavBar } from './components/NavBar';
 import './App.css';
 
 function App() {
@@ -15,6 +18,7 @@ function App() {
     <div className="landing">
       <header className="topbar">
         <span className="brand">Task Master</span>
+        <NavBar />
         <div className="account">
           <span
             className={`status ${isSignedIn ? 'status-in' : 'status-out'}`}
@@ -27,7 +31,10 @@ function App() {
       </header>
 
       <main className="board-main">
-        <KanbanBoard />
+        <Routes>
+          <Route path="/" element={<KanbanBoard />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+        </Routes>
       </main>
     </div>
   );

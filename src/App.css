@@ -35,6 +35,36 @@
   flex-shrink: 0;
 }
 
+.nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 6px 14px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.nav-link:hover {
+  color: var(--chalk);
+}
+
+.nav-link.active {
+  color: var(--chalk);
+  border-color: var(--rule);
+  background: rgba(242, 238, 226, 0.06);
+}
+
 .account {
   display: flex;
   align-items: center;

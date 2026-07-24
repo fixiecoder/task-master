@@ -2,7 +2,7 @@ import { getIdToken } from 'firebase/auth';
 import { collection, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import type { Task, TaskStatus } from './types';
-import { cacheTask, cacheTasks, getCachedTask, getCachedTasks } from './db';
+import { cacheTask, cacheTasks, deleteCachedTask, getCachedTask, getCachedTasks } from './db';
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -97,7 +97,7 @@ export async function createTask(title: string, notes?: string): Promise<Task> {
 
 export async function updateTask(
   id: string,
-  updates: Partial<Pick<Task, 'title' | 'status' | 'notes'>>,
+  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>,
 ): Promise<Task> {
   const res = await apiFetch(`/tasks/${id}`, {
     method: 'PUT',
@@ -107,6 +107,12 @@ export async function updateTask(
   const task = await res.json() as Task;
   await cacheTask(task);
   return task;
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const res = await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`deleteTask failed: ${res.status}`);
+  await deleteCachedTask(id);
 }
 
 export interface PromptResponse {

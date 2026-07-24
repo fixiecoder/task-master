@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { Task, TaskStatus } from '../types';
+import type { Task, TaskStatus, TaskDateEntry, TaskDateType } from '../types';
 import {
   TASK_STATUSES,
   sendTaskChatMessage,
@@ -9,6 +9,7 @@ import {
   type ChatMessage,
   type ConversationSummary,
 } from '../api';
+import { DATE_TYPE_LABELS, formatDuration } from '../taskDates';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: 'To do',
@@ -19,7 +20,8 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 interface TaskDetailProps {
   task: Task;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes'>>) => void;
+  onSave: (id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) => void;
+  onDelete: (id: string) => void;
   onTasksChanged: () => void;
   isOnline: boolean;
 }
@@ -47,11 +49,20 @@ function formatRelativeTime(iso: string): string {
   return `${days}d ago`;
 }
 
-export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: TaskDetailProps) {
+export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, isOnline }: TaskDetailProps) {
   const [title, setTitle] = useState(task.title);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [notes, setNotes] = useState(task.notes ?? '');
   const [isEditingNotes, setIsEditingNotes] = useState(!task.notes);
+
+  const [dates, setDates] = useState<TaskDateEntry[]>(task.dates ?? []);
+  const [estimatedHoursInput, setEstimatedHoursInput] = useState(
+    task.estimatedMinutes != null ? String(task.estimatedMinutes / 60) : '',
+  );
+  const [newDateType, setNewDateType] = useState<TaskDateType>('planned_work');
+  const [newDateValue, setNewDateValue] = useState('');
+  const [newDateDuration, setNewDateDuration] = useState('');
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -73,11 +84,39 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
     if (el) el.scrollTop = el.scrollHeight;
   }, [isChatOpen, chatMessages, isChatting]);
 
-  const isDirty = title !== task.title || status !== task.status || notes !== (task.notes ?? '');
+  const estimatedMinutes = estimatedHoursInput.trim() === ''
+    ? null
+    : Math.round(Number(estimatedHoursInput) * 60);
+
+  const isDirty = title !== task.title
+    || status !== task.status
+    || notes !== (task.notes ?? '')
+    || JSON.stringify(dates) !== JSON.stringify(task.dates ?? [])
+    || estimatedMinutes !== (task.estimatedMinutes ?? null);
 
   function handleSave() {
-    onSave(task.id, { title, status, notes: notes || null });
+    onSave(task.id, { title, status, notes: notes || null, dates, estimatedMinutes });
     setIsEditingNotes(false);
+  }
+
+  function handleAddDate(e: FormEvent) {
+    e.preventDefault();
+    if (!newDateValue) return;
+    const entry: TaskDateEntry = {
+      id: crypto.randomUUID(),
+      type: newDateType,
+      date: newDateValue,
+      durationMinutes: newDateType === 'planned_work' && newDateDuration
+        ? Number(newDateDuration) * 60
+        : null,
+    };
+    setDates((prev) => [...prev, entry].sort((a, b) => a.date.localeCompare(b.date)));
+    setNewDateValue('');
+    setNewDateDuration('');
+  }
+
+  function handleRemoveDate(id: string) {
+    setDates((prev) => prev.filter((d) => d.id !== id));
   }
 
   async function handleChatSubmit(e: FormEvent) {
@@ -168,6 +207,74 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
               {STATUS_LABELS[s]}
             </button>
           ))}
+        </div>
+
+        <div className="task-detail-dates">
+          <div className="task-detail-dates-header">
+            <span>Dates</span>
+          </div>
+
+          {dates.length === 0 ? (
+            <p className="task-detail-dates-empty">No dates yet.</p>
+          ) : (
+            <ul className="task-date-list">
+              {dates.map((d) => (
+                <li key={d.id} className={`task-date-item task-date-${d.type}`}>
+                  <span className="task-date-dot" />
+                  <span className="task-date-type">{DATE_TYPE_LABELS[d.type]}</span>
+                  <span className="task-date-value">{d.date}</span>
+                  {d.type === 'planned_work' && d.durationMinutes ? (
+                    <span className="task-date-duration">{formatDuration(d.durationMinutes)}</span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="task-date-remove"
+                    onClick={() => handleRemoveDate(d.id)}
+                    aria-label="Remove date"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form className="task-date-form" onSubmit={handleAddDate}>
+            <select value={newDateType} onChange={(e) => setNewDateType(e.target.value as TaskDateType)}>
+              <option value="start">Start date</option>
+              <option value="due">Due date</option>
+              <option value="planned_work">Planned work</option>
+            </select>
+            <input
+              type="date"
+              value={newDateValue}
+              onChange={(e) => setNewDateValue(e.target.value)}
+              required
+            />
+            {newDateType === 'planned_work' && (
+              <input
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Hours"
+                value={newDateDuration}
+                onChange={(e) => setNewDateDuration(e.target.value)}
+              />
+            )}
+            <button type="submit" disabled={!newDateValue}>Add</button>
+          </form>
+
+          <label className="task-detail-estimate">
+            Estimated total time (hours)
+            <input
+              type="number"
+              min="0"
+              step="0.25"
+              placeholder="e.g. 8"
+              value={estimatedHoursInput}
+              onChange={(e) => setEstimatedHoursInput(e.target.value)}
+            />
+          </label>
         </div>
 
         <div className={`task-detail-notes ${isOnline && isChatOpen ? 'notes-collapsed' : ''}`}>
@@ -285,18 +392,41 @@ export function TaskDetail({ task, onClose, onSave, onTasksChanged, isOnline }: 
         )}
 
         <footer className="task-detail-footer">
-          <button type="button" className="secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="primary"
-            onClick={handleSave}
-            disabled={!isDirty || !isOnline}
-            title={!isOnline ? "Can't save while offline" : undefined}
-          >
-            Save
-          </button>
+          {isConfirmingDelete ? (
+            <div className="task-detail-delete-confirm">
+              <span>Delete this task?</span>
+              <button type="button" className="secondary" onClick={() => setIsConfirmingDelete(false)}>
+                Cancel
+              </button>
+              <button type="button" className="danger" onClick={() => onDelete(task.id)} disabled={!isOnline}>
+                Delete
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="link-button task-detail-delete"
+              onClick={() => setIsConfirmingDelete(true)}
+              disabled={!isOnline}
+              title={!isOnline ? "Can't delete while offline" : undefined}
+            >
+              Delete task
+            </button>
+          )}
+          <div className="task-detail-footer-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary"
+              onClick={handleSave}
+              disabled={!isDirty || !isOnline}
+              title={!isOnline ? "Can't save while offline" : undefined}
+            >
+              Save
+            </button>
+          </div>
         </footer>
       </div>
     </div>

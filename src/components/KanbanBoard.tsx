@@ -1,55 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Task, TaskStatus } from '../types';
-import { createTask, listTasks, subscribeToTasks, updateTask, TASK_STATUSES } from '../api';
-import { useOnlineStatus } from '../useOnlineStatus';
+import { createTask, updateTask, TASK_STATUSES } from '../api';
+import { useTasks } from '../useTasks';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskDetail } from './TaskDetail';
 import { PromptBar } from './PromptBar';
 import './Board.css';
 
 export function KanbanBoard() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { tasks, setTasks, isLoading, error, setError, isOnline, refresh, saveTask, removeTask } = useTasks();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [touchDragOverStatus, setTouchDragOverStatus] = useState<TaskStatus | null>(null);
-  const isOnline = useOnlineStatus();
-
-  // Manual fallback used for offline reads (served from the local cache)
-  // and to recover from a failed drag-and-drop move.
-  const refresh = useCallback(async () => {
-    try {
-      setTasks(await listTasks());
-      setError(null);
-    } catch {
-      setError('Could not load tasks.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isOnline) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- offline fallback load
-      refresh();
-      return;
-    }
-
-    const unsubscribe = subscribeToTasks(
-      (liveTasks) => {
-        setTasks(liveTasks);
-        setError(null);
-        setIsLoading(false);
-      },
-      () => {
-        setError('Could not load tasks.');
-        setIsLoading(false);
-      },
-    );
-
-    return unsubscribe;
-  }, [isOnline, refresh]);
 
   async function handleDrop(status: TaskStatus) {
     if (!draggedTaskId) return;
@@ -75,13 +37,21 @@ export function KanbanBoard() {
     }
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes'>>) {
+  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
     try {
-      const updated = await updateTask(id, updates);
-      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      await saveTask(id, updates);
       setSelectedTaskId(null);
     } catch {
       setError('Could not save that task — try again.');
+    }
+  }
+
+  async function handleDeleteTask(id: string) {
+    try {
+      await removeTask(id);
+      setSelectedTaskId(null);
+    } catch {
+      setError('Could not delete that task — try again.');
     }
   }
 
@@ -122,6 +92,7 @@ export function KanbanBoard() {
           task={selectedTask}
           onClose={() => setSelectedTaskId(null)}
           onSave={handleSaveTask}
+          onDelete={handleDeleteTask}
           onTasksChanged={refresh}
           isOnline={isOnline}
         />
