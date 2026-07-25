@@ -80,6 +80,11 @@
   padding: 6px 6px 8px;
   min-height: 90px;
   overflow: hidden;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: var(--kraft-dim);
 }
 
 .calendar-day-outside {
@@ -133,6 +138,200 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---- Day detail modal ---- */
+
+.day-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 18, 16, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 20;
+}
+
+.day-detail {
+  width: min(420px, 100%);
+  max-height: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--kraft);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.day-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.day-detail-header h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.day-detail-close {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.day-detail-close:hover {
+  color: var(--ink);
+}
+
+.day-detail-empty {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.day-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.day-detail-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  font: inherit;
+  background: #f5efde;
+  border: none;
+  border-left: 3px solid var(--status-color, var(--ink-dim));
+  border-radius: 2px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.day-detail-item-start { --status-color: var(--pine); }
+.day-detail-item-due { --status-color: var(--stamp); }
+.day-detail-item-planned_work { --status-color: var(--ochre); }
+
+.day-detail-item-title {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.day-detail-item-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.day-detail-add {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px dashed var(--ink-dim);
+  border-radius: 3px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.day-detail-add:hover {
+  border-color: var(--stamp);
+  color: var(--stamp);
+}
+
+/* ---- Quick-add task modal ---- */
+
+.quick-add-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 18, 16, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 30;
+}
+
+.quick-add {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--kraft);
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.quick-add input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #f5efde;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 10px 12px;
+}
+
+.quick-add input:focus-visible {
+  outline: none;
+  border-color: var(--stamp);
+}
+
+.quick-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.quick-add-actions button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.quick-add-actions button[type='button'] {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--rule);
+}
+
+.quick-add-actions button[type='submit'] {
+  color: var(--kraft);
+  background: var(--stamp);
+  border: 1px solid var(--stamp);
+}
+
+.quick-add-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 @media (max-width: 800px) {

@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { Task, TaskDateEntry } from '../types';
 import { useTasks } from '../useTasks';
+import { createTask, updateTask } from '../api';
 import { DATE_TYPE_LABELS, formatDuration, toDateKey, todayKey } from '../taskDates';
 import { TaskDetail } from './TaskDetail';
+import { DayDetailModal } from './DayDetailModal';
+import { QuickAddTaskModal } from './QuickAddTaskModal';
 import './CalendarPage.css';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -30,12 +33,14 @@ function buildMonthGrid(monthDate: Date): Date[] {
 }
 
 export function CalendarPage() {
-  const { tasks, isLoading, error, isOnline, refresh, saveTask, removeTask } = useTasks();
+  const { tasks, setTasks, isLoading, error, setError, isOnline, refresh, saveTask, removeTask } = useTasks();
   const [monthDate, setMonthDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
   const entriesByDate = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
@@ -83,7 +88,26 @@ export function CalendarPage() {
     }
   }
 
+  async function handleQuickAddTask(title: string) {
+    if (!selectedDayKey) return;
+    try {
+      const created = await createTask(title);
+      const startEntry: TaskDateEntry = {
+        id: crypto.randomUUID(),
+        type: 'start',
+        date: selectedDayKey,
+        durationMinutes: null,
+      };
+      const withDate = await updateTask(created.id, { dates: [startEntry] });
+      setTasks((prev) => [withDate, ...prev]);
+      setIsQuickAddOpen(false);
+    } catch {
+      setError('Could not create that task — try again.');
+    }
+  }
+
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
+  const selectedDayEntries = selectedDayKey ? entriesByDate.get(selectedDayKey) ?? [] : [];
 
   return (
     <div className="calendar-page">
@@ -117,6 +141,7 @@ export function CalendarPage() {
               <div
                 key={key}
                 className={`calendar-day ${inMonth ? '' : 'calendar-day-outside'} ${isToday ? 'calendar-day-today' : ''}`}
+                onClick={() => setSelectedDayKey(key)}
               >
                 <span className="calendar-day-number">{day.getDate()}</span>
                 <div className="calendar-day-entries">
@@ -125,7 +150,10 @@ export function CalendarPage() {
                       key={entry.id}
                       type="button"
                       className={`calendar-chip calendar-chip-${entry.type}`}
-                      onClick={() => setSelectedTaskId(task.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTaskId(task.id);
+                      }}
                       title={`${DATE_TYPE_LABELS[entry.type]}: ${task.title}${entry.durationMinutes ? ` (${formatDuration(entry.durationMinutes)})` : ''}`}
                     >
                       <span className="calendar-chip-title">{task.title}</span>
@@ -136,6 +164,23 @@ export function CalendarPage() {
             );
           })}
         </div>
+      )}
+
+      {selectedDayKey && (
+        <DayDetailModal
+          dateKey={selectedDayKey}
+          entries={selectedDayEntries}
+          onClose={() => setSelectedDayKey(null)}
+          onSelectTask={setSelectedTaskId}
+          onAddTask={() => setIsQuickAddOpen(true)}
+        />
+      )}
+
+      {isQuickAddOpen && (
+        <QuickAddTaskModal
+          onClose={() => setIsQuickAddOpen(false)}
+          onSave={handleQuickAddTask}
+        />
       )}
 
       {selectedTask && (
