@@ -1,0 +1,133 @@
+.shopping-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 24px 32px 32px;
+  gap: 16px;
+}
+
+.shopping-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.shopping-page-header h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--chalk);
+}
+
+.shopping-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shopping-category-tab {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.shopping-category-tab:hover {
+  color: var(--chalk);
+  border-color: var(--chalk-dim);
+}
+
+.shopping-category-tab.active {
+  color: var(--kraft);
+  background: var(--stamp);
+  border-color: var(--stamp);
+}
+
+.shopping-page-empty {
+  color: var(--chalk-dim);
+}
+
+.shopping-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.shopping-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--kraft);
+  border-radius: 3px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.shopping-group input[type='checkbox'] {
+  margin-top: 3px;
+}
+
+.shopping-group.purchased .shopping-group-name {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+}
+
+.shopping-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shopping-group-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shopping-group-name {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.shopping-group-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.shopping-group-source {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.shopping-group-task-link {
+  font: inherit;
+  color: var(--stamp);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.shopping-group-task-link:hover {
+  color: var(--stamp-dim);
+}

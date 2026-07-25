@@ -19,3 +19,39 @@ export interface Task {
   createdAt: unknown;
   updatedAt: unknown;
 }
+
+export type ShoppingCategory = 'groceries' | 'diy' | 'electronics' | 'other';
+
+export interface ShoppingItem {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  name: string;
+  normalizedName: string;
+  category: ShoppingCategory | null;
+  purchased: boolean;
+  purchasedAt: unknown;
+  source: 'ai' | 'manual';
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export type NotificationType = 'morning_digest';
+
+export interface NotificationDoc {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  taskIds: string[];
+  createdAt: unknown;
+  read: boolean;
+  readAt: unknown;
+}
+
+export interface NotificationSettings {
+  morningReminderTime: string; // 'HH:mm', local
+  timezone: string; // IANA
+  enabled: boolean;
+  lastMorningDigestSentDate: string | null; // ISO yyyy-mm-dd
+}

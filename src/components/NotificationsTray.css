@@ -1,0 +1,137 @@
+.notifications-tray {
+  position: relative;
+}
+
+.bell-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--chalk-dim);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.bell-button:hover {
+  color: var(--chalk);
+  border-color: var(--chalk-dim);
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--chalk);
+  background: var(--stamp);
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.tray-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.tray-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  background: var(--board-raised);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  z-index: 21;
+  overflow: hidden;
+}
+
+.tray-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chalk);
+}
+
+.tray-mark-all {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--pine);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.tray-mark-all:disabled {
+  color: var(--chalk-dim);
+  cursor: default;
+}
+
+.tray-list {
+  list-style: none;
+  overflow-y: auto;
+}
+
+.tray-empty {
+  padding: 20px 14px;
+  color: var(--chalk-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+.tray-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.tray-item:last-child {
+  border-bottom: none;
+}
+
+.tray-item.unread {
+  background: rgba(242, 238, 226, 0.05);
+}
+
+.tray-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chalk);
+  margin-bottom: 2px;
+}
+
+.tray-item.read .tray-item-title {
+  font-weight: 500;
+  color: var(--chalk-dim);
+}
+
+.tray-item-body {
+  font-size: 12px;
+  color: var(--chalk-dim);
+}

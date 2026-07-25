@@ -1,0 +1,71 @@
+.settings-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  color: var(--chalk);
+}
+
+.settings-page h1 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 24px;
+}
+
+.settings-section {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.settings-section h2 {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  margin-bottom: 10px;
+}
+
+.settings-section button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--chalk);
+  background: var(--board-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.settings-section button:hover:not(:disabled) {
+  border-color: var(--chalk-dim);
+}
+
+.settings-section button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.settings-field input[type='time'] {
+  font-family: var(--font-mono);
+  background: var(--board);
+  color: var(--chalk);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 4px 8px;
+}
+
+.settings-hint {
+  font-size: 12px;
+  color: var(--chalk-dim);
+}

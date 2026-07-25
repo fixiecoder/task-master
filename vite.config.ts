@@ -11,6 +11,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
+        // Keep the existing "don't cache API calls" behavior: only the
+        // built app shell is precached, same as the old generateSW default.
+      },
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Task Master',
@@ -44,6 +51,8 @@ export default defineConfig({
       // reads/writes and AI chat always go straight to the network and
       // never serve a stale response. Offline reads are served from
       // IndexedDB by src/db.ts instead.
+      // injectManifest (rather than the default generateSW) is used so
+      // src/sw.ts can also handle FCM background push notifications.
     }),
   ],
 })

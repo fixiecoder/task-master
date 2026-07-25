@@ -1,12 +1,12 @@
 import { getIdToken } from 'firebase/auth';
 import { collection, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import type { Task, TaskStatus } from './types';
+import type { ShoppingCategory, ShoppingItem, Task, TaskStatus } from './types';
 import { cacheTask, cacheTasks, deleteCachedTask, getCachedTask, getCachedTasks } from './db';
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const user = auth.currentUser;
   if (!user) throw new Error('Not authenticated');
 
@@ -185,3 +185,105 @@ export async function sendTaskChatMessage(
 }
 
 export const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'done'];
+
+export interface RunDigestResponse {
+  sent: boolean;
+  taskCount: number;
+}
+
+// Manually triggers today's morning-digest check for the signed-in user,
+// bypassing the scheduled function's time-window/dedupe logic. Used both
+// as a "check now" feature and to test the notification pipeline without
+// waiting for the cron schedule.
+export async function runDigestNow(): Promise<RunDigestResponse> {
+  const res = await apiFetch('/notifications/run-digest', { method: 'POST' });
+  if (!res.ok) throw new Error(`runDigestNow failed: ${res.status}`);
+  return res.json() as Promise<RunDigestResponse>;
+}
+
+export const CATEGORY_ORDER: ShoppingCategory[] = ['groceries', 'diy', 'electronics', 'other'];
+
+export const CATEGORY_LABELS: Record<ShoppingCategory, string> = {
+  groceries: 'Groceries',
+  diy: 'DIY',
+  electronics: 'Electronics',
+  other: 'Other',
+};
+
+export async function listShoppingItems(taskId?: string): Promise<ShoppingItem[]> {
+  const path = taskId ? `/shopping-items?taskId=${encodeURIComponent(taskId)}` : '/shopping-items';
+  const res = await apiFetch(path);
+  if (!res.ok) throw new Error(`listShoppingItems failed: ${res.status}`);
+  const data = await res.json() as { items: ShoppingItem[] };
+  return data.items;
+}
+
+// Live-syncs the signed-in user's shopping items, same pattern as
+// subscribeToTasks: REST writes land in this collection and this listener
+// picks them up immediately, across the aggregate Shopping view and any
+// open task's list.
+export function subscribeToShoppingItems(
+  onChange: (items: ShoppingItem[]) => void,
+  onError: (err: unknown) => void,
+): Unsubscribe {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const itemsQuery = query(
+    collection(db, 'users', user.uid, 'shoppingItems'),
+    orderBy('createdAt', 'desc'),
+  );
+
+  return onSnapshot(
+    itemsQuery,
+    (snapshot) => onChange(snapshot.docs.map((doc) => doc.data() as ShoppingItem)),
+    onError,
+  );
+}
+
+// Adds one or more AI-parsed items to a task's shopping list. Pass
+// purchased: true to add straight to Materials instead (already-owned
+// items, skipping the "need to buy" list).
+export async function addShoppingItems(taskId: string, text: string, purchased = false): Promise<ShoppingItem[]> {
+  const res = await apiFetch('/shopping-items', {
+    method: 'POST',
+    body: JSON.stringify({ taskId, text, purchased }),
+  });
+  if (!res.ok) throw new Error(`addShoppingItems failed: ${res.status}`);
+  const data = await res.json() as { items: ShoppingItem[] };
+  return data.items;
+}
+
+export async function setShoppingItemCategory(id: string, category: ShoppingCategory): Promise<ShoppingItem> {
+  const res = await apiFetch(`/shopping-items/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ category }),
+  });
+  if (!res.ok) throw new Error(`setShoppingItemCategory failed: ${res.status}`);
+  return res.json() as Promise<ShoppingItem>;
+}
+
+export async function toggleShoppingItemPurchased(id: string, purchased: boolean): Promise<ShoppingItem> {
+  const res = await apiFetch(`/shopping-items/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ purchased }),
+  });
+  if (!res.ok) throw new Error(`toggleShoppingItemPurchased failed: ${res.status}`);
+  return res.json() as Promise<ShoppingItem>;
+}
+
+// Marks every item sharing a normalized name as purchased/unpurchased, so
+// checking off a duplicate in the aggregate Shopping view reflects across
+// every task's list that references it.
+export async function togglePurchaseGroup(normalizedName: string, purchased: boolean): Promise<void> {
+  const res = await apiFetch('/shopping-items/purchase-group', {
+    method: 'POST',
+    body: JSON.stringify({ normalizedName, purchased }),
+  });
+  if (!res.ok) throw new Error(`togglePurchaseGroup failed: ${res.status}`);
+}
+
+export async function deleteShoppingItem(id: string): Promise<void> {
+  const res = await apiFetch(`/shopping-items/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`deleteShoppingItem failed: ${res.status}`);
+}

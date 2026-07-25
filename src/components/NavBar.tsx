@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 const NAV_ITEMS = [
   { to: '/', label: 'Board', end: true },
   { to: '/calendar', label: 'Calendar', end: false },
+  { to: '/shopping', label: 'Shopping', end: false },
+  { to: '/settings', label: 'Settings', end: false },
 ];
 
 export function NavBar() {

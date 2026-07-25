@@ -10,6 +10,7 @@ import {
   type ConversationSummary,
 } from '../api';
 import { DATE_TYPE_LABELS, formatDuration } from '../taskDates';
+import { ShoppingListSection } from './ShoppingListSection';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: 'To do',
@@ -276,6 +277,8 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             />
           </label>
         </div>
+
+        <ShoppingListSection taskId={task.id} isOnline={isOnline} />
 
         <div className={`task-detail-notes ${isOnline && isChatOpen ? 'notes-collapsed' : ''}`}>
           <div className="task-detail-notes-header">

@@ -4,7 +4,10 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from './firebase';
 import { KanbanBoard } from './components/KanbanBoard';
 import { CalendarPage } from './components/CalendarPage';
+import { ShoppingView } from './components/ShoppingView';
 import { NavBar } from './components/NavBar';
+import { NotificationsTray } from './components/NotificationsTray';
+import { NotificationSettingsPage } from './components/NotificationSettings';
 import './App.css';
 
 function App() {
@@ -20,6 +23,7 @@ function App() {
         <span className="brand">Task Master</span>
         <NavBar />
         <div className="account">
+          <NotificationsTray />
           <span
             className={`status ${isSignedIn ? 'status-in' : 'status-out'}`}
             title={isSignedIn ? user.email ?? undefined : undefined}
@@ -34,6 +38,8 @@ function App() {
         <Routes>
           <Route path="/" element={<KanbanBoard />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/shopping" element={<ShoppingView />} />
+          <Route path="/settings" element={<NotificationSettingsPage />} />
         </Routes>
       </main>
     </div>
