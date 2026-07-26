@@ -51,8 +51,7 @@ export function NotificationsTray() {
                   onClick={() => !n.read && markNotificationRead(n.id)}
                 >
                   <div className="tray-item-title">{n.title}</div>
-                  <div className="tray-item-body">{n.body}</div>
-                  {n.taskIds?.length > 0 && (
+                  {n.taskIds?.length > 0 ? (
                     <ul className="tray-item-tasks">
                       {n.taskIds.map((taskId, i) => (
                         <li key={taskId}>
@@ -69,6 +68,8 @@ export function NotificationsTray() {
                         </li>
                       ))}
                     </ul>
+                  ) : (
+                    <div className="tray-item-body">{n.body}</div>
                   )}
                 </li>
               ))}

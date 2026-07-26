@@ -9,6 +9,7 @@ interface CalendarChipProps {
   onDragStart: (entry: TaskDateEntry) => void;
   onTouchDrop: (dateKey: string) => void;
   onTouchHover: (dateKey: string | null) => void;
+  onContextMenu: (task: Task, entry: TaskDateEntry, x: number, y: number) => void;
 }
 
 const LONG_PRESS_MS = 350;
@@ -19,7 +20,7 @@ function dayKeyUnderPoint(x: number, y: number): string | null {
   return el?.dataset.calendarDay ?? null;
 }
 
-export function CalendarChip({ task, entry, onOpen, onDragStart, onTouchDrop, onTouchHover }: CalendarChipProps) {
+export function CalendarChip({ task, entry, onOpen, onDragStart, onTouchDrop, onTouchHover, onContextMenu }: CalendarChipProps) {
   const chipRef = useRef<HTMLButtonElement>(null);
   const [isTouchDragging, setIsTouchDragging] = useState(false);
 
@@ -102,6 +103,11 @@ export function CalendarChip({ task, entry, onOpen, onDragStart, onTouchDrop, on
       onClick={(e) => {
         e.stopPropagation();
         onOpen(task.id);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onContextMenu(task, entry, e.clientX, e.clientY);
       }}
       title={`${DATE_TYPE_LABELS[entry.type]}: ${task.title}${entry.durationMinutes ? ` (${formatDuration(entry.durationMinutes)})` : ''}`}
     >

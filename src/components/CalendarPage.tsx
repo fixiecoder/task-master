@@ -9,6 +9,7 @@ import { DayDetailModal } from './DayDetailModal';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
 import { UnscheduledTaskPickerModal } from './UnscheduledTaskPickerModal';
 import { CalendarChip } from './CalendarChip';
+import { ContextMenu } from './ContextMenu';
 import './CalendarPage.css';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -96,6 +97,7 @@ export function CalendarPage() {
   const [draggedEntry, setDraggedEntry] = useState<TaskDateEntry | null>(null);
   const [dragOverDayKey, setDragOverDayKey] = useState<string | null>(null);
   const [touchDragOverDayKey, setTouchDragOverDayKey] = useState<string | null>(null);
+  const [chipContextMenu, setChipContextMenu] = useState<{ task: Task; entry: TaskDateEntry; x: number; y: number } | null>(null);
 
   const entriesByDate = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
@@ -214,6 +216,17 @@ export function CalendarPage() {
     }
   }
 
+  async function handleUnscheduleEntry(task: Task, entry: TaskDateEntry) {
+    const nextDates = task.dates.filter((d) => d.id !== entry.id);
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, dates: nextDates } : t)));
+    try {
+      await updateTask(task.id, { dates: nextDates });
+    } catch {
+      setError('Could not unschedule that task — try again.');
+      refresh();
+    }
+  }
+
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
   const selectedDayEntries = selectedDayKey ? entriesByDate.get(selectedDayKey) ?? [] : [];
   const unscheduledTasks = useMemo(
@@ -302,6 +315,7 @@ export function CalendarPage() {
                       onDragStart={setDraggedEntry}
                       onTouchDrop={handleDropOnDay}
                       onTouchHover={setTouchDragOverDayKey}
+                      onContextMenu={(task, entry, x, y) => setChipContextMenu({ task, entry, x, y })}
                     />
                   ))}
                 </div>
@@ -309,6 +323,20 @@ export function CalendarPage() {
             );
           })}
         </div>
+      )}
+
+      {chipContextMenu && (
+        <ContextMenu
+          x={chipContextMenu.x}
+          y={chipContextMenu.y}
+          onClose={() => setChipContextMenu(null)}
+          items={[
+            {
+              label: 'Unschedule',
+              onSelect: () => handleUnscheduleEntry(chipContextMenu.task, chipContextMenu.entry),
+            },
+          ]}
+        />
       )}
 
       {selectedDayKey && (
