@@ -134,8 +134,8 @@ export function CalendarPage() {
 
   function goToToday() {
     const now = new Date();
-    setMonthDate(() => now);
-    setWeekDate(() => now);
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    updateParams({ month: monthKey, week: toDateKey(now) });
   }
 
   async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
