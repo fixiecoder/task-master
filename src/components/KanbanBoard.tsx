@@ -4,7 +4,6 @@ import { createTask, updateTask } from '../api';
 import { useTasks } from '../useTasks';
 import { KanbanColumn, type ColumnId } from './KanbanColumn';
 import { TaskDetail } from './TaskDetail';
-import { PromptBar } from './PromptBar';
 import { StartDatePromptModal } from './StartDatePromptModal';
 import { withDateStamp } from '../taskDates';
 import './Board.css';
@@ -134,8 +133,6 @@ export function KanbanBoard() {
           ))}
         </div>
       )}
-
-      {isOnline && <PromptBar onTasksChanged={refresh} />}
 
       {startDatePromptTask && (
         <StartDatePromptModal
