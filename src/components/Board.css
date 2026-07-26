@@ -471,49 +471,108 @@
   color: var(--stamp);
 }
 
-.task-date-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.task-detail-dates-error {
+  color: #e0715a;
+  font-size: 12px;
 }
 
-.task-date-form select,
-.task-date-form input {
-  font: inherit;
+.task-date-add {
+  align-self: flex-start;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.2);
-  border-radius: 3px;
-  padding: 6px 8px;
-}
-
-.task-date-form input[type='number'] {
-  width: 84px;
-}
-
-.task-date-form button {
-  font-family: var(--font-mono);
-  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--kraft);
-  background: var(--stamp);
-  border: 1px solid var(--stamp);
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px dashed var(--ink-dim);
   border-radius: 3px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
 }
 
-.task-date-form button:disabled {
+.task-date-add:hover {
+  border-color: var(--stamp);
+  color: var(--stamp);
+}
+
+.task-date-add:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-.task-detail-estimate {
+/* ---- Task date modal: add a date, always-visible calendar ---- */
+
+.task-date-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 18, 16, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 30;
+}
+
+.task-date-modal {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--kraft);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.task-date-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.task-date-modal-header h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.task-date-modal-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-date-modal-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border: 1.5px dashed var(--ink-dim);
+  border-radius: 3px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.task-date-modal-radio.active {
+  border-style: solid;
+  border-color: var(--stamp);
+  color: var(--stamp);
+}
+
+.task-date-modal-radio input {
+  margin: 0;
+}
+
+.task-date-modal-duration {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -522,7 +581,101 @@
   color: var(--ink-dim);
 }
 
-.task-detail-estimate input {
+.task-date-modal-duration input {
+  width: 80px;
+  font: inherit;
+  color: var(--ink);
+  background: #f5efde;
+  border: 1px solid rgba(36, 31, 22, 0.2);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
+.task-date-modal-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-date-modal-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.task-date-modal-calendar-header button {
+  font-size: 14px;
+  color: var(--ink-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.task-date-modal-calendar-header button:hover {
+  color: var(--ink);
+}
+
+.task-date-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.task-date-modal-weekday {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-align: center;
+  padding-bottom: 2px;
+}
+
+.task-date-modal-day {
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: #f5efde;
+  border: 1px solid rgba(36, 31, 22, 0.15);
+  border-radius: 2px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.task-date-modal-day:hover {
+  border-color: var(--stamp);
+  color: var(--stamp);
+}
+
+.task-date-modal-day.outside {
+  color: var(--ink-dim);
+  background: transparent;
+}
+
+.task-date-modal-day.today {
+  box-shadow: inset 0 0 0 2px var(--stamp);
+}
+
+.task-detail-estimate-display {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.task-date-modal-estimate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.task-date-modal-estimate input {
   width: 80px;
   font: inherit;
   color: var(--ink);

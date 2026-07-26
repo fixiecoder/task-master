@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import type { Task, TaskDateEntry } from '../types';
 import { useTasks } from '../useTasks';
 import { createTask, updateTask } from '../api';
-import { DATE_TYPE_LABELS, formatDuration, toDateKey, todayKey } from '../taskDates';
+import { buildMonthGrid, toDateKey, todayKey } from '../taskDates';
 import { TaskDetail } from './TaskDetail';
 import { DayDetailModal } from './DayDetailModal';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
 import { UnscheduledTaskPickerModal } from './UnscheduledTaskPickerModal';
+import { CalendarChip } from './CalendarChip';
 import './CalendarPage.css';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -15,22 +16,6 @@ const MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, { month: 'long', year
 interface CalendarEntry {
   task: Task;
   entry: TaskDateEntry;
-}
-
-function buildMonthGrid(monthDate: Date): Date[] {
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
-  const firstOfMonth = new Date(year, month, 1);
-
-  // Monday-first week: getDay() 0=Sun..6=Sat, shift so Monday=0.
-  const leadingDays = (firstOfMonth.getDay() + 6) % 7;
-  const gridStart = new Date(year, month, 1 - leadingDays);
-
-  const days: Date[] = [];
-  for (let i = 0; i < 42; i++) {
-    days.push(new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i));
-  }
-  return days;
 }
 
 export function CalendarPage() {
@@ -43,6 +28,9 @@ export function CalendarPage() {
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isAssignPickerOpen, setIsAssignPickerOpen] = useState(false);
+  const [draggedEntry, setDraggedEntry] = useState<TaskDateEntry | null>(null);
+  const [dragOverDayKey, setDragOverDayKey] = useState<string | null>(null);
+  const [touchDragOverDayKey, setTouchDragOverDayKey] = useState<string | null>(null);
 
   const entriesByDate = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
@@ -127,6 +115,29 @@ export function CalendarPage() {
     }
   }
 
+  async function handleDropOnDay(dateKey: string) {
+    const entry = draggedEntry;
+    setDraggedEntry(null);
+    setDragOverDayKey(null);
+    setTouchDragOverDayKey(null);
+    if (!entry || entry.date === dateKey) return;
+
+    const task = tasks.find((t) => (t.dates ?? []).some((d) => d.id === entry.id));
+    if (!task) return;
+
+    const nextDates = task.dates
+      .map((d) => (d.id === entry.id ? { ...d, date: dateKey } : d))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, dates: nextDates } : t)));
+    try {
+      await updateTask(task.id, { dates: nextDates });
+    } catch {
+      setError('Could not reschedule that task — try again.');
+      refresh();
+    }
+  }
+
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
   const selectedDayEntries = selectedDayKey ? entriesByDate.get(selectedDayKey) ?? [] : [];
   const unscheduledTasks = useMemo(
@@ -162,27 +173,35 @@ export function CalendarPage() {
             const inMonth = day.getMonth() === monthDate.getMonth();
             const isToday = key === today;
             const dayEntries = entriesByDate.get(key) ?? [];
+            const isDragOver = dragOverDayKey === key || touchDragOverDayKey === key;
             return (
               <div
                 key={key}
-                className={`calendar-day ${inMonth ? '' : 'calendar-day-outside'} ${isToday ? 'calendar-day-today' : ''}`}
+                data-calendar-day={key}
+                className={`calendar-day ${inMonth ? '' : 'calendar-day-outside'} ${isToday ? 'calendar-day-today' : ''} ${isDragOver ? 'drag-over' : ''}`}
                 onClick={() => setSelectedDayKey(key)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverDayKey(key);
+                }}
+                onDragLeave={() => setDragOverDayKey((k) => (k === key ? null : k))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDropOnDay(key);
+                }}
               >
                 <span className="calendar-day-number">{day.getDate()}</span>
                 <div className="calendar-day-entries">
                   {dayEntries.map(({ task, entry }) => (
-                    <button
+                    <CalendarChip
                       key={entry.id}
-                      type="button"
-                      className={`calendar-chip calendar-chip-${entry.type}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTaskId(task.id);
-                      }}
-                      title={`${DATE_TYPE_LABELS[entry.type]}: ${task.title}${entry.durationMinutes ? ` (${formatDuration(entry.durationMinutes)})` : ''}`}
-                    >
-                      <span className="calendar-chip-title">{task.title}</span>
-                    </button>
+                      task={task}
+                      entry={entry}
+                      onOpen={setSelectedTaskId}
+                      onDragStart={setDraggedEntry}
+                      onTouchDrop={handleDropOnDay}
+                      onTouchHover={setTouchDragOverDayKey}
+                    />
                   ))}
                 </div>
               </div>

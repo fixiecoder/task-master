@@ -32,6 +32,22 @@ export function todayKey(): string {
   return toDateKey(new Date());
 }
 
+export function buildMonthGrid(monthDate: Date): Date[] {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+
+  // Monday-first week: getDay() 0=Sun..6=Sat, shift so Monday=0.
+  const leadingDays = (firstOfMonth.getDay() + 6) % 7;
+  const gridStart = new Date(year, month, 1 - leadingDays);
+
+  const days: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    days.push(new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i));
+  }
+  return days;
+}
+
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;

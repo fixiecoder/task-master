@@ -203,15 +203,13 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
         </form>
       </div>
 
-      <div className="shopping-list-section materials-section">
-        <div className="shopping-list-header">
-          <span>Materials</span>
-        </div>
-        <p className="materials-hint">Items already available for this task — checking off a shopping item moves it here.</p>
+      {materials.length > 0 && (
+        <div className="shopping-list-section materials-section">
+          <div className="shopping-list-header">
+            <span>Materials</span>
+          </div>
+          <p className="materials-hint">Items already available for this task — checking off a shopping item moves it here.</p>
 
-        {materials.length === 0 ? (
-          <p className="shopping-list-empty">Nothing available yet.</p>
-        ) : (
           <ul className="shopping-item-list">
             {materials.map((item) => (
               <ItemRow
@@ -224,21 +222,21 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
               />
             ))}
           </ul>
-        )}
 
-        <form className="shopping-add-form" onSubmit={handleAddMaterialSubmit}>
-          <input
-            type="text"
-            value={materialText}
-            onChange={(e) => setMaterialText(e.target.value)}
-            placeholder="Add material(s) you already have… e.g. a hammer, spare screws"
-            disabled={isAddingMaterial}
-          />
-          <button type="submit" disabled={isAddingMaterial || !materialText.trim()}>
-            {isAddingMaterial ? 'Adding…' : 'Add'}
-          </button>
-        </form>
-      </div>
+          <form className="shopping-add-form" onSubmit={handleAddMaterialSubmit}>
+            <input
+              type="text"
+              value={materialText}
+              onChange={(e) => setMaterialText(e.target.value)}
+              placeholder="Add material(s) you already have… e.g. a hammer, spare screws"
+              disabled={isAddingMaterial}
+            />
+            <button type="submit" disabled={isAddingMaterial || !materialText.trim()}>
+              {isAddingMaterial ? 'Adding…' : 'Add'}
+            </button>
+          </form>
+        </div>
+      )}
     </>
   );
 }

@@ -6,11 +6,13 @@ import {
   sendTaskChatMessage,
   listTaskConversations,
   getTaskConversation,
+  updateTask,
   type ChatMessage,
   type ConversationSummary,
 } from '../api';
 import { DATE_TYPE_LABELS, formatDuration, withDateStamp } from '../taskDates';
 import { ShoppingListSection } from './ShoppingListSection';
+import { TaskDateModal } from './TaskDateModal';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: 'To do',
@@ -58,12 +60,11 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
   const [isEditingNotes, setIsEditingNotes] = useState(!task.notes);
 
   const [dates, setDates] = useState<TaskDateEntry[]>(task.dates ?? []);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [estimatedHoursInput, setEstimatedHoursInput] = useState(
     task.estimatedMinutes != null ? String(task.estimatedMinutes / 60) : '',
   );
-  const [newDateType, setNewDateType] = useState<TaskDateType>('planned_work');
-  const [newDateValue, setNewDateValue] = useState('');
-  const [newDateDuration, setNewDateDuration] = useState('');
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -107,24 +108,41 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
     else if (next === 'done') setDates((prev) => withDateStamp(prev, 'completed'));
   }
 
-  function handleAddDate(e: FormEvent) {
-    e.preventDefault();
-    if (!newDateValue) return;
-    const entry: TaskDateEntry = {
-      id: crypto.randomUUID(),
-      type: newDateType,
-      date: newDateValue,
-      durationMinutes: newDateType === 'planned_work' && newDateDuration
-        ? Number(newDateDuration) * 60
-        : null,
-    };
-    setDates((prev) => [...prev, entry].sort((a, b) => a.date.localeCompare(b.date)));
-    setNewDateValue('');
-    setNewDateDuration('');
+  async function persistDates(next: TaskDateEntry[]) {
+    const previous = dates;
+    setDates(next);
+    setDateError(null);
+    try {
+      await updateTask(task.id, { dates: next });
+      onTasksChanged();
+    } catch {
+      setDates(previous);
+      setDateError("Couldn't save that date — try again.");
+    }
+  }
+
+  async function persistEstimate(hoursInput: string) {
+    const previous = estimatedHoursInput;
+    if (hoursInput === previous) return;
+    const minutes = hoursInput.trim() === '' ? null : Math.round(Number(hoursInput) * 60);
+    setEstimatedHoursInput(hoursInput);
+    setDateError(null);
+    try {
+      await updateTask(task.id, { estimatedMinutes: minutes });
+      onTasksChanged();
+    } catch {
+      setEstimatedHoursInput(previous);
+      setDateError("Couldn't save that estimate — try again.");
+    }
+  }
+
+  function handleAddDateFromModal(type: TaskDateType, date: string, durationMinutes: number | null) {
+    const entry: TaskDateEntry = { id: crypto.randomUUID(), type, date, durationMinutes };
+    persistDates([...dates, entry].sort((a, b) => a.date.localeCompare(b.date)));
   }
 
   function handleRemoveDate(id: string) {
-    setDates((prev) => prev.filter((d) => d.id !== id));
+    persistDates(dates.filter((d) => d.id !== id));
   }
 
   async function handleChatSubmit(e: FormEvent) {
@@ -222,9 +240,9 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             <span>Dates</span>
           </div>
 
-          {dates.length === 0 ? (
-            <p className="task-detail-dates-empty">No dates yet.</p>
-          ) : (
+          {dateError && <p className="task-detail-dates-error">{dateError}</p>}
+
+          {dates.length > 0 && (
             <ul className="task-date-list">
               {dates.map((d) => (
                 <li key={d.id} className={`task-date-item task-date-${d.type}`}>
@@ -238,6 +256,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
                     type="button"
                     className="task-date-remove"
                     onClick={() => handleRemoveDate(d.id)}
+                    disabled={!isOnline}
                     aria-label="Remove date"
                   >
                     ×
@@ -247,42 +266,21 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             </ul>
           )}
 
-          <form className="task-date-form" onSubmit={handleAddDate}>
-            <select value={newDateType} onChange={(e) => setNewDateType(e.target.value as TaskDateType)}>
-              <option value="start">Start date</option>
-              <option value="due">Due date</option>
-              <option value="planned_work">Planned work</option>
-            </select>
-            <input
-              type="date"
-              value={newDateValue}
-              onChange={(e) => setNewDateValue(e.target.value)}
-              required
-            />
-            {newDateType === 'planned_work' && (
-              <input
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Hours"
-                value={newDateDuration}
-                onChange={(e) => setNewDateDuration(e.target.value)}
-              />
-            )}
-            <button type="submit" disabled={!newDateValue}>Add</button>
-          </form>
+          {estimatedHoursInput.trim() !== '' && (
+            <p className="task-detail-estimate-display">
+              Estimated total: {estimatedHoursInput}h
+            </p>
+          )}
 
-          <label className="task-detail-estimate">
-            Estimated total time (hours)
-            <input
-              type="number"
-              min="0"
-              step="0.25"
-              placeholder="e.g. 8"
-              value={estimatedHoursInput}
-              onChange={(e) => setEstimatedHoursInput(e.target.value)}
-            />
-          </label>
+          <button
+            type="button"
+            className="task-date-add"
+            onClick={() => setIsDateModalOpen(true)}
+            disabled={!isOnline}
+            title={!isOnline ? "Can't add dates while offline" : undefined}
+          >
+            + Add date
+          </button>
         </div>
 
         <ShoppingListSection taskId={task.id} isOnline={isOnline} />
@@ -453,6 +451,15 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
           </div>
         </footer>
       </div>
+
+      {isDateModalOpen && (
+        <TaskDateModal
+          onClose={() => setIsDateModalOpen(false)}
+          onAdd={handleAddDateFromModal}
+          estimatedHoursInput={estimatedHoursInput}
+          onEstimateChange={persistEstimate}
+        />
+      )}
     </div>
   );
 }
