@@ -7,6 +7,12 @@
   gap: 20px;
 }
 
+@media (max-width: 600px) {
+  .board-page {
+    padding: 16px 14px 0;
+  }
+}
+
 /* ---- Prompt console (the signature element) ----
    Everywhere else on the board reads as paper and ink; this strip is the one
    place that reads as a machine — you radio orders in, the board obeys. */
@@ -169,12 +175,18 @@
 .kanban-board {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 22px;
   min-height: 0;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
   .kanban-board {
     grid-template-columns: 1fr;
   }
@@ -234,6 +246,84 @@
   overflow-y: auto;
 }
 
+/* ---- Start-date prompt modal (dragging a task into To do) ---- */
+
+.start-date-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 18, 16, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 30;
+}
+
+.start-date-prompt {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--kraft);
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.start-date-prompt-label {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.start-date-prompt input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #f5efde;
+  border: 1px solid rgba(36, 31, 22, 0.2);
+  border-radius: 3px;
+  padding: 10px 12px;
+}
+
+.start-date-prompt input:focus-visible {
+  outline: none;
+  border-color: var(--stamp);
+}
+
+.start-date-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.start-date-prompt-actions button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.start-date-prompt-actions button[type='button'] {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid rgba(36, 31, 22, 0.2);
+}
+
+.start-date-prompt-actions button[type='submit'] {
+  color: var(--kraft);
+  background: var(--stamp);
+  border: 1px solid var(--stamp);
+}
+
+.start-date-prompt-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .quick-add input {
   width: 100%;
   font: inherit;
@@ -283,6 +373,7 @@
   box-shadow: 0 1px 2px rgba(36, 31, 22, 0.15);
 }
 
+.status-unscheduled .task-card { --status-color: var(--stamp-dim, var(--ink-dim)); }
 .status-todo .task-card { --status-color: var(--ink-dim); }
 .status-in_progress .task-card { --status-color: var(--ochre); }
 .status-done .task-card { --status-color: var(--pine); }
@@ -356,6 +447,13 @@
   height: 10px;
   background: var(--ochre);
   clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+}
+
+@media (max-width: 600px) {
+  .task-detail {
+    width: 100%;
+    padding: 24px 16px 20px;
+  }
 }
 
 .task-detail-header {
@@ -481,6 +579,7 @@
 .task-date-start .task-date-dot { --status-color: var(--pine); }
 .task-date-due .task-date-dot { --status-color: var(--stamp); }
 .task-date-planned_work .task-date-dot { --status-color: var(--ochre); }
+.task-date-completed .task-date-dot { --status-color: var(--pine); }
 
 .task-date-type {
   font-family: var(--font-mono);
@@ -735,6 +834,31 @@
   align-items: center;
   gap: 14px;
   font-weight: 400;
+}
+
+.task-chat-brain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink-dim);
+  transition: color 0.15s;
+}
+
+.task-chat-brain svg {
+  width: 16px;
+  height: 16px;
+}
+
+.task-chat-brain.smart-off:hover {
+  color: var(--ink);
+}
+
+.task-chat-brain.smart-on {
+  color: #e8579c;
 }
 
 .task-chat-history {

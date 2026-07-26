@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Task, TaskStatus } from '../types';
+import type { Task } from '../types';
 import { ProgressBar } from './ProgressBar';
+import type { ColumnId } from './KanbanColumn';
 
 interface TaskCardProps {
   task: Task;
   onOpen: (task: Task) => void;
   onDragStart: (task: Task) => void;
-  onTouchDrop: (status: TaskStatus) => void;
-  onTouchHover: (status: TaskStatus | null) => void;
+  onTouchDrop: (id: ColumnId) => void;
+  onTouchHover: (id: ColumnId | null) => void;
 }
 
 const LONG_PRESS_MS = 350;
 const MOVE_CANCEL_PX = 10;
 
-function statusUnderPoint(x: number, y: number): TaskStatus | null {
+function columnUnderPoint(x: number, y: number): ColumnId | null {
   const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-kanban-status]');
-  return (el?.dataset.kanbanStatus as TaskStatus | undefined) ?? null;
+  return (el?.dataset.kanbanStatus as ColumnId | undefined) ?? null;
 }
 
 export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover }: TaskCardProps) {
@@ -52,7 +53,7 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
         return;
       }
       e.preventDefault();
-      onTouchHover(statusUnderPoint(touch.clientX, touch.clientY));
+      onTouchHover(columnUnderPoint(touch.clientX, touch.clientY));
     }
 
     function handleTouchEnd(e: TouchEvent) {
@@ -62,9 +63,9 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
       setIsTouchDragging(false);
       e.preventDefault();
       const touch = e.changedTouches[0];
-      const status = statusUnderPoint(touch.clientX, touch.clientY);
+      const column = columnUnderPoint(touch.clientX, touch.clientY);
       onTouchHover(null);
-      if (status) onTouchDrop(status);
+      if (column) onTouchDrop(column);
     }
 
     function handleTouchCancel() {

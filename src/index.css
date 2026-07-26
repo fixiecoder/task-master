@@ -49,8 +49,13 @@
   padding: 0;
 }
 
+html,
 body {
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body {
   background:
     radial-gradient(ellipse at top, rgba(242, 238, 226, 0.04), transparent 60%),
     var(--board);

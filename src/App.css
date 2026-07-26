@@ -1,5 +1,6 @@
 .landing {
   min-height: 100vh;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -8,31 +9,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
+  padding: 14px 32px;
   background: var(--board-raised);
   border-bottom: 1px solid var(--rule);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--chalk);
-}
-
-.brand::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  background: var(--stamp);
-  transform: rotate(45deg);
-  flex-shrink: 0;
+  gap: 12px;
 }
 
 .nav-bar {
@@ -42,17 +23,22 @@
 }
 
 .nav-link {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   color: var(--chalk-dim);
   text-decoration: none;
   border: 1px solid transparent;
   border-radius: 3px;
-  padding: 6px 14px;
   transition: color 0.15s, border-color 0.15s;
+}
+
+.nav-link svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
 }
 
 .nav-link:hover {
@@ -71,36 +57,15 @@
   gap: 16px;
 }
 
-.status {
-  --stamp-color: var(--stamp);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--stamp-color);
-  border: 1.5px dashed var(--stamp-color);
-  border-radius: 3px;
-  padding: 5px 10px;
-  transform: rotate(-2deg);
-}
-
-.status-in {
-  --stamp-color: var(--pine);
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
 .board-main {
   flex: 1;
   display: flex;
   min-height: 0;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 10px 12px;
+  }
 }

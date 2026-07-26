@@ -1,12 +1,25 @@
-import type { TaskDateType } from './types';
+import type { TaskDateEntry, TaskDateType } from './types';
 
 export const DATE_TYPE_LABELS: Record<TaskDateType, string> = {
   start: 'Start',
   due: 'Due',
   planned_work: 'Planned work',
+  completed: 'Completed',
 };
 
 export const DATE_TYPES: TaskDateType[] = ['start', 'due', 'planned_work'];
+
+export function hasDateOfType(dates: TaskDateEntry[], type: TaskDateType): boolean {
+  return dates.some((d) => d.type === type);
+}
+
+export function withDateStamp(
+  dates: TaskDateEntry[],
+  type: Extract<TaskDateType, 'start' | 'completed'>,
+): TaskDateEntry[] {
+  if (hasDateOfType(dates, type)) return dates;
+  return [...dates, { id: crypto.randomUUID(), type, date: todayKey(), durationMinutes: null }];
+}
 
 export function toDateKey(date: Date): string {
   const year = date.getFullYear();

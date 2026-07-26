@@ -175,10 +175,11 @@ export async function sendTaskChatMessage(
   taskId: string,
   message: string,
   conversationId?: string,
+  smart?: boolean,
 ): Promise<TaskChatResponse> {
   const res = await apiFetch(`/tasks/${taskId}/chat`, {
     method: 'POST',
-    body: JSON.stringify({ message, conversationId }),
+    body: JSON.stringify({ message, conversationId, smart }),
   });
   if (!res.ok) throw new Error(`sendTaskChatMessage failed: ${res.status}`);
   return res.json() as Promise<TaskChatResponse>;

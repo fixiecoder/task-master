@@ -1,31 +1,31 @@
 import { useState, type FormEvent } from 'react';
-import type { Task, TaskStatus } from '../types';
+import type { Task } from '../types';
 import { TaskCard } from './TaskCard';
 
-const COLUMN_LABELS: Record<TaskStatus, string> = {
-  todo: 'To do',
-  in_progress: 'In progress',
-  done: 'Done',
-};
+export type ColumnId = 'unscheduled' | 'todo' | 'in_progress' | 'done';
 
 interface KanbanColumnProps {
-  status: TaskStatus;
+  id: ColumnId;
+  label: string;
   tasks: Task[];
   onOpenTask: (task: Task) => void;
   onDragStart: (task: Task) => void;
-  onDrop: (status: TaskStatus) => void;
+  onDrop: (id: ColumnId) => void;
   onQuickAdd: (title: string) => void;
+  showQuickAdd: boolean;
   isTouchDragOver: boolean;
-  onTouchHover: (status: TaskStatus | null) => void;
+  onTouchHover: (id: ColumnId | null) => void;
 }
 
 export function KanbanColumn({
-  status,
+  id,
+  label,
   tasks,
   onOpenTask,
   onDragStart,
   onDrop,
   onQuickAdd,
+  showQuickAdd,
   isTouchDragOver,
   onTouchHover,
 }: KanbanColumnProps) {
@@ -42,8 +42,8 @@ export function KanbanColumn({
 
   return (
     <section
-      className={`kanban-column status-${status} ${isDragOver || isTouchDragOver ? 'drag-over' : ''}`}
-      data-kanban-status={status}
+      className={`kanban-column status-${id} ${isDragOver || isTouchDragOver ? 'drag-over' : ''}`}
+      data-kanban-status={id}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragOver(true);
@@ -51,12 +51,12 @@ export function KanbanColumn({
       onDragLeave={() => setIsDragOver(false)}
       onDrop={() => {
         setIsDragOver(false);
-        onDrop(status);
+        onDrop(id);
       }}
     >
       <header className="kanban-column-header">
         <span className="kanban-column-dot" />
-        <h2>{COLUMN_LABELS[status]}</h2>
+        <h2>{label}</h2>
         <span className="kanban-column-count">{tasks.length}</span>
       </header>
 
@@ -73,7 +73,7 @@ export function KanbanColumn({
         ))}
       </div>
 
-      {status === 'todo' && (
+      {showQuickAdd && (
         <form className="quick-add" onSubmit={handleSubmit}>
           <input
             type="text"

@@ -9,7 +9,7 @@ import {
   type ChatMessage,
   type ConversationSummary,
 } from '../api';
-import { DATE_TYPE_LABELS, formatDuration } from '../taskDates';
+import { DATE_TYPE_LABELS, formatDuration, withDateStamp } from '../taskDates';
 import { ShoppingListSection } from './ShoppingListSection';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -71,6 +71,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
   const [isChatting, setIsChatting] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
+  const [isSmartMode, setIsSmartMode] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
@@ -98,6 +99,12 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
   function handleSave() {
     onSave(task.id, { title, status, notes: notes || null, dates, estimatedMinutes });
     setIsEditingNotes(false);
+  }
+
+  function handleStatusChange(next: TaskStatus) {
+    setStatus(next);
+    if (next === 'in_progress') setDates((prev) => withDateStamp(prev, 'start'));
+    else if (next === 'done') setDates((prev) => withDateStamp(prev, 'completed'));
   }
 
   function handleAddDate(e: FormEvent) {
@@ -130,7 +137,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
     setChatError(null);
     setIsChatting(true);
     try {
-      const response = await sendTaskChatMessage(task.id, text, conversationId ?? undefined);
+      const response = await sendTaskChatMessage(task.id, text, conversationId ?? undefined, isSmartMode);
       setConversationId(response.conversationId);
       setChatMessages((prev) => [
         ...prev,
@@ -203,7 +210,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
               key={s}
               type="button"
               className={`status-pill status-${s} ${status === s ? 'active' : ''}`}
-              onClick={() => setStatus(s)}
+              onClick={() => handleStatusChange(s)}
             >
               {STATUS_LABELS[s]}
             </button>
@@ -320,6 +327,20 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             </button>
             {isChatOpen && (
               <div className="task-chat-header-actions">
+                <button
+                  type="button"
+                  className={`task-chat-brain ${isSmartMode ? 'smart-on' : 'smart-off'}`}
+                  onClick={() => setIsSmartMode((v) => !v)}
+                  aria-pressed={isSmartMode}
+                  title={isSmartMode ? 'Smart mode on — using Sonnet' : 'Smart mode off — using Haiku'}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9.5 3.5a2.5 2.5 0 0 0-2.5 2.5v.2A2.8 2.8 0 0 0 5 8.8v.4a2.6 2.6 0 0 0-1 4.9 2.7 2.7 0 0 0 1.6 3.8A2.6 2.6 0 0 0 8 20.5a2.5 2.5 0 0 0 1.5-.5" />
+                    <path d="M9.5 3.5c.6 0 1.1.2 1.5.5V19c0 .8-.7 1.5-1.5 1.5" />
+                    <path d="M14.5 3.5a2.5 2.5 0 0 1 2.5 2.5v.2A2.8 2.8 0 0 1 19 8.8v.4a2.6 2.6 0 0 1 1 4.9 2.7 2.7 0 0 1-1.6 3.8A2.6 2.6 0 0 1 16 20.5a2.5 2.5 0 0 1-1.5-.5" />
+                    <path d="M14.5 3.5c-.6 0-1.1.2-1.5.5V19c0 .8.7 1.5 1.5 1.5" />
+                  </svg>
+                </button>
                 <button type="button" className="link-button" onClick={handleNewChat}>
                   New chat
                 </button>

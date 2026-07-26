@@ -1,6 +1,6 @@
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
-export type TaskDateType = 'start' | 'due' | 'planned_work';
+export type TaskDateType = 'start' | 'due' | 'planned_work' | 'completed';
 
 export interface TaskDateEntry {
   id: string;

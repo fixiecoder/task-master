@@ -7,6 +7,12 @@
   gap: 16px;
 }
 
+@media (max-width: 600px) {
+  .calendar-page {
+    padding: 16px 14px 24px;
+  }
+}
+
 .calendar-header {
   display: flex;
   align-items: center;
