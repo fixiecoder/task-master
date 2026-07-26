@@ -44,6 +44,7 @@ export interface NotificationDoc {
   title: string;
   body: string;
   taskIds: string[];
+  taskTitles: string[];
   createdAt: unknown;
   read: boolean;
   readAt: unknown;

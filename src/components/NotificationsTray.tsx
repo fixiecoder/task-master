@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../useNotifications';
 import { markAllNotificationsRead, markNotificationRead } from '../notifications';
 import './NotificationsTray.css';
@@ -6,6 +7,13 @@ import './NotificationsTray.css';
 export function NotificationsTray() {
   const { notifications, unreadCount } = useNotifications();
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  function openTask(notificationId: string, taskId: string) {
+    markNotificationRead(notificationId);
+    setOpen(false);
+    navigate(`/?task=${taskId}`);
+  }
 
   return (
     <div className="notifications-tray">
@@ -44,6 +52,24 @@ export function NotificationsTray() {
                 >
                   <div className="tray-item-title">{n.title}</div>
                   <div className="tray-item-body">{n.body}</div>
+                  {n.taskIds?.length > 0 && (
+                    <ul className="tray-item-tasks">
+                      {n.taskIds.map((taskId, i) => (
+                        <li key={taskId}>
+                          <button
+                            type="button"
+                            className="tray-item-task-link"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openTask(n.id, taskId);
+                            }}
+                          >
+                            {n.taskTitles?.[i] ?? 'Untitled task'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>
