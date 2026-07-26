@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { runDigestNow } from '../api';
+import { runDigestNow, type DigestSkipReason } from '../api';
 import {
   disablePushNotifications,
   enablePushNotifications,
@@ -9,6 +9,24 @@ import {
 import './NotificationSettings.css';
 
 const DETECTED_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function describeSkipReason(reason: DigestSkipReason | undefined): string {
+  switch (reason) {
+    case 'not-configured':
+      return 'No notification settings saved yet — enable push notifications first.';
+    case 'disabled':
+      return 'Notifications are disabled for this account.';
+    case 'no-reminder-time':
+      return 'No reminder time set.';
+    case 'already-sent-today':
+      return "Today's digest was already sent.";
+    case 'outside-window':
+      return "It's not your reminder time yet.";
+    case 'no-tasks-planned':
+    default:
+      return 'No tasks planned for today.';
+  }
+}
 
 export function NotificationSettingsPage() {
   const [permission, setPermission] = useState<NotificationPermission>(
@@ -60,7 +78,7 @@ export function NotificationSettingsPage() {
       setDigestStatus(
         result.sent
           ? `Sent — ${result.taskCount} task${result.taskCount === 1 ? '' : 's'} planned today.`
-          : 'No tasks planned for today.',
+          : describeSkipReason(result.reason),
       );
     } catch {
       setDigestStatus('Could not run digest.');

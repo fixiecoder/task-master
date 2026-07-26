@@ -187,9 +187,18 @@ export async function sendTaskChatMessage(
 
 export const TASK_STATUSES: TaskStatus[] = ['todo', 'in_progress', 'done'];
 
+export type DigestSkipReason =
+  | 'not-configured'
+  | 'disabled'
+  | 'no-reminder-time'
+  | 'already-sent-today'
+  | 'outside-window'
+  | 'no-tasks-planned';
+
 export interface RunDigestResponse {
   sent: boolean;
   taskCount: number;
+  reason?: DigestSkipReason;
 }
 
 // Manually triggers today's morning-digest check for the signed-in user,

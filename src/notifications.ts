@@ -112,11 +112,23 @@ export async function markAllNotificationsRead(): Promise<void> {
   await batch.commit();
 }
 
-// Chrome doesn't show an OS notification for FCM messages received while
-// the tab is foregrounded, and the live onSnapshot listener above already
-// updates the tray as soon as the digest writes its Firestore doc — so
-// this registration exists only to prevent an unhandled-message warning,
-// not to render anything.
+// Firebase only routes a push to the service worker's onBackgroundMessage
+// when no tab for the app is open at all — merely switching away to
+// another tab still counts as "foreground" and lands here instead. So to
+// get an OS-level notification in every case, show it ourselves via the
+// service worker registration rather than relying on Firebase's
+// automatic background display.
 messagingReady.then((messaging) => {
-  if (messaging) onMessage(messaging, () => {});
+  if (!messaging) return;
+  onMessage(messaging, async (payload) => {
+    const title = payload.notification?.title ?? 'Task Master';
+    const body = payload.notification?.body ?? '';
+    const registration = await navigator.serviceWorker.ready;
+    await registration.showNotification(title, {
+      body,
+      icon: '/pwa-192x192.png',
+      data: { url: payload.fcmOptions?.link ?? payload.data?.url ?? '/' },
+      tag: payload.data?.notificationId,
+    });
+  });
 });
