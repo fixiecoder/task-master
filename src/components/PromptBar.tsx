@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { sendPrompt } from '../api';
+import { usePersistedState } from '../usePersistedState';
 
 interface PromptBarProps {
   onTasksChanged: () => void;
@@ -8,7 +9,7 @@ interface PromptBarProps {
 const DURATION_HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export function PromptBar({ onTasksChanged }: PromptBarProps) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = usePersistedState('task-master:prompt-draft', '');
   const [reply, setReply] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();

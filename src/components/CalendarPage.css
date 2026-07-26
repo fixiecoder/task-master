@@ -28,6 +28,47 @@
   color: var(--chalk);
 }
 
+.calendar-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-view-toggle {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.calendar-view-toggle button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  background: transparent;
+  border: none;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.calendar-view-toggle button + button {
+  border-left: 1px solid var(--rule);
+}
+
+.calendar-view-toggle button:hover {
+  color: var(--chalk);
+}
+
+.calendar-view-toggle button.active {
+  color: var(--kraft);
+  background: var(--stamp);
+}
+
 .calendar-nav {
   display: flex;
   align-items: center;
@@ -76,6 +117,50 @@
   color: var(--chalk-dim);
   padding: 8px 10px;
   text-align: center;
+}
+
+.calendar-grid-week {
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(64px, 1fr);
+}
+
+.calendar-grid-week .calendar-day {
+  flex-direction: row;
+  align-items: center;
+  min-height: 64px;
+  padding: 8px 14px;
+  gap: 14px;
+}
+
+.calendar-day-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 84px;
+}
+
+.calendar-day-weekday {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.calendar-grid-week .calendar-day-number {
+  font-size: 14px;
+}
+
+.calendar-grid-week .calendar-day-entries {
+  flex: 1;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-y: visible;
+}
+
+.calendar-grid-week .calendar-chip {
+  width: auto;
 }
 
 .calendar-day {

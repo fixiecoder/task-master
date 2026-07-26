@@ -11,6 +11,7 @@ import {
 } from '../api';
 import { syncWithRetry } from '../syncQueue';
 import { useOptimisticShoppingItems } from '../useOptimisticShoppingItems';
+import { usePersistedState } from '../usePersistedState';
 import './ShoppingListSection.css';
 
 interface ShoppingListSectionProps {
@@ -72,9 +73,9 @@ function ItemRow({ item, showCheckbox, onTogglePurchased, onSetCategory, onDelet
 export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionProps) {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [addText, setAddText] = useState('');
+  const [addText, setAddText] = usePersistedState(`task-master:shopping-add-draft:${taskId}`, '');
   const [isAdding, setIsAdding] = useState(false);
-  const [materialText, setMaterialText] = useState('');
+  const [materialText, setMaterialText] = usePersistedState(`task-master:shopping-material-draft:${taskId}`, '');
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
 
   useEffect(() => {

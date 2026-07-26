@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { ShoppingCategory, ShoppingItem, Task } from '../types';
 import { CATEGORY_LABELS, CATEGORY_ORDER, subscribeToShoppingItems, togglePurchaseGroup } from '../api';
 import { syncWithRetry } from '../syncQueue';
@@ -92,8 +93,29 @@ export function ShoppingView() {
   const { tasks, isOnline, refresh, saveTask, removeTask } = useTasks();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory | 'all'>('all');
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const categoryParam = searchParams.get('category');
+  const selectedCategory: ShoppingCategory | 'all' =
+    categoryParam && (CATEGORY_ORDER as string[]).includes(categoryParam) ? (categoryParam as ShoppingCategory) : 'all';
+  function setSelectedCategory(category: ShoppingCategory | 'all') {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (category === 'all') next.delete('category');
+      else next.set('category', category);
+      return next;
+    });
+  }
+
+  const selectedTaskId = searchParams.get('task');
+  function setSelectedTaskId(id: string | null) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id) next.set('task', id);
+      else next.delete('task');
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!isOnline) return;

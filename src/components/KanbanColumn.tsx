@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import type { Task } from '../types';
+import { usePersistedState } from '../usePersistedState';
 import { TaskCard } from './TaskCard';
 
 export type ColumnId = 'unscheduled' | 'todo' | 'in_progress' | 'done';
@@ -30,7 +31,7 @@ export function KanbanColumn({
   onTouchHover,
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = usePersistedState(`task-master:quickadd-draft:${id}`, '');
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Task, TaskDateEntry } from '../types';
 import { useTasks } from '../useTasks';
 import { createTask, updateTask } from '../api';
-import { buildMonthGrid, toDateKey, todayKey } from '../taskDates';
+import { buildMonthGrid, buildWeekGrid, toDateKey, todayKey } from '../taskDates';
 import { TaskDetail } from './TaskDetail';
 import { DayDetailModal } from './DayDetailModal';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
@@ -12,6 +13,19 @@ import './CalendarPage.css';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+const WEEK_DAY_MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+const WEEK_DAY_MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+function formatWeekRange(days: Date[]): string {
+  const start = days[0];
+  const end = days[days.length - 1];
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startLabel = WEEK_DAY_MONTH_FORMATTER.format(start);
+  const endLabel = sameYear ? WEEK_DAY_MONTH_FORMATTER.format(end) : WEEK_DAY_MONTH_YEAR_FORMATTER.format(end);
+  return `${startLabel} – ${endLabel}, ${end.getFullYear()}`;
+}
+
+type CalendarViewMode = 'month' | 'week';
 
 interface CalendarEntry {
   task: Task;
@@ -20,12 +34,63 @@ interface CalendarEntry {
 
 export function CalendarPage() {
   const { tasks, setTasks, isLoading, error, setError, isOnline, refresh, saveTask, removeTask } = useTasks();
-  const [monthDate, setMonthDate] = useState(() => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  function updateParams(updates: Record<string, string | null>) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+      }
+      return next;
+    });
+  }
+
+  const viewParam = searchParams.get('view');
+  const viewMode: CalendarViewMode = viewParam === 'week' ? 'week' : 'month';
+  function setViewMode(mode: CalendarViewMode) {
+    updateParams({ view: mode === 'month' ? null : mode });
+  }
+
+  const monthParam = searchParams.get('month');
+  const monthDate = useMemo(() => {
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+      const [year, month] = monthParam.split('-').map(Number);
+      return new Date(year, month - 1, 1);
+    }
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  }, [monthParam]);
+  function setMonthDate(updater: (d: Date) => Date) {
+    const next = updater(monthDate);
+    const monthKey = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+    updateParams({ month: monthKey });
+  }
+
+  const weekParam = searchParams.get('week');
+  const weekDate = useMemo(() => {
+    if (weekParam && /^\d{4}-\d{2}-\d{2}$/.test(weekParam)) {
+      const [year, month, day] = weekParam.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date();
+  }, [weekParam]);
+  function setWeekDate(updater: (d: Date) => Date) {
+    const next = updater(weekDate);
+    updateParams({ week: toDateKey(next) });
+  }
+
+  const selectedTaskId = searchParams.get('task');
+  function setSelectedTaskId(id: string | null) {
+    updateParams({ task: id });
+  }
+
+  const selectedDayKey = searchParams.get('day');
+  function setSelectedDayKey(key: string | null) {
+    updateParams({ day: key });
+  }
+
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isAssignPickerOpen, setIsAssignPickerOpen] = useState(false);
   const [draggedEntry, setDraggedEntry] = useState<TaskDateEntry | null>(null);
@@ -44,20 +109,31 @@ export function CalendarPage() {
     return map;
   }, [tasks]);
 
-  const days = useMemo(() => buildMonthGrid(monthDate), [monthDate]);
+  const monthDays = useMemo(() => buildMonthGrid(monthDate), [monthDate]);
+  const weekDays = useMemo(() => buildWeekGrid(weekDate), [weekDate]);
+  const days = viewMode === 'month' ? monthDays : weekDays;
   const today = todayKey();
 
-  function goToPrevMonth() {
-    setMonthDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  function goToPrev() {
+    if (viewMode === 'month') {
+      setMonthDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+    } else {
+      setWeekDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7));
+    }
   }
 
-  function goToNextMonth() {
-    setMonthDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  function goToNext() {
+    if (viewMode === 'month') {
+      setMonthDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    } else {
+      setWeekDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7));
+    }
   }
 
   function goToToday() {
     const now = new Date();
-    setMonthDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setMonthDate(() => now);
+    setWeekDate(() => now);
   }
 
   async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
@@ -153,24 +229,42 @@ export function CalendarPage() {
       {error && <p className="board-error">{error}</p>}
 
       <div className="calendar-header">
-        <h2>{MONTH_FORMATTER.format(monthDate)}</h2>
-        <div className="calendar-nav">
-          <button type="button" onClick={goToPrevMonth} aria-label="Previous month">‹</button>
-          <button type="button" onClick={goToToday}>Today</button>
-          <button type="button" onClick={goToNextMonth} aria-label="Next month">›</button>
+        <h2>{viewMode === 'month' ? MONTH_FORMATTER.format(monthDate) : formatWeekRange(weekDays)}</h2>
+        <div className="calendar-header-controls">
+          <div className="calendar-view-toggle" role="group" aria-label="Calendar view">
+            <button
+              type="button"
+              className={viewMode === 'month' ? 'active' : ''}
+              onClick={() => setViewMode('month')}
+            >
+              Month
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'week' ? 'active' : ''}
+              onClick={() => setViewMode('week')}
+            >
+              Week
+            </button>
+          </div>
+          <div className="calendar-nav">
+            <button type="button" onClick={goToPrev} aria-label={viewMode === 'month' ? 'Previous month' : 'Previous week'}>‹</button>
+            <button type="button" onClick={goToToday}>Today</button>
+            <button type="button" onClick={goToNext} aria-label={viewMode === 'month' ? 'Next month' : 'Next week'}>›</button>
+          </div>
         </div>
       </div>
 
       {isLoading ? (
         <p className="board-loading">Loading tasks…</p>
       ) : (
-        <div className="calendar-grid">
-          {WEEKDAY_LABELS.map((label) => (
+        <div className={`calendar-grid ${viewMode === 'week' ? 'calendar-grid-week' : ''}`}>
+          {viewMode === 'month' && WEEKDAY_LABELS.map((label) => (
             <div key={label} className="calendar-weekday">{label}</div>
           ))}
           {days.map((day) => {
             const key = toDateKey(day);
-            const inMonth = day.getMonth() === monthDate.getMonth();
+            const inMonth = viewMode === 'month' ? day.getMonth() === monthDate.getMonth() : true;
             const isToday = key === today;
             const dayEntries = entriesByDate.get(key) ?? [];
             const isDragOver = dragOverDayKey === key || touchDragOverDayKey === key;
@@ -190,7 +284,14 @@ export function CalendarPage() {
                   handleDropOnDay(key);
                 }}
               >
-                <span className="calendar-day-number">{day.getDate()}</span>
+                {viewMode === 'week' ? (
+                  <span className="calendar-day-label">
+                    <span className="calendar-day-weekday">{WEEKDAY_LABELS[(day.getDay() + 6) % 7]}</span>
+                    <span className="calendar-day-number">{day.getDate()}</span>
+                  </span>
+                ) : (
+                  <span className="calendar-day-number">{day.getDate()}</span>
+                )}
                 <div className="calendar-day-entries">
                   {dayEntries.map(({ task, entry }) => (
                     <CalendarChip

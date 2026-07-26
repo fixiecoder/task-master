@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Task } from '../types';
 import { createTask, updateTask } from '../api';
 import { useTasks } from '../useTasks';
@@ -26,7 +27,16 @@ function columnFor(task: Task): ColumnId {
 
 export function KanbanBoard() {
   const { tasks, setTasks, isLoading, error, setError, isOnline, refresh, saveTask, removeTask } = useTasks();
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTaskId = searchParams.get('task');
+  function setSelectedTaskId(id: string | null) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id) next.set('task', id);
+      else next.delete('task');
+      return next;
+    });
+  }
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [touchDragOverColumn, setTouchDragOverColumn] = useState<ColumnId | null>(null);
   const [startDatePromptTaskId, setStartDatePromptTaskId] = useState<string | null>(null);

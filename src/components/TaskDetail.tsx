@@ -11,6 +11,7 @@ import {
   type ConversationSummary,
 } from '../api';
 import { DATE_TYPE_LABELS, formatDuration, withDateStamp } from '../taskDates';
+import { usePersistedState } from '../usePersistedState';
 import { ShoppingListSection } from './ShoppingListSection';
 import { TaskDateModal } from './TaskDateModal';
 
@@ -41,6 +42,39 @@ function normalizeMarkdown(text: string): string {
   return collapsed.join('\n').trim();
 }
 
+interface TaskDraft {
+  title: string;
+  status: TaskStatus;
+  notes: string;
+  dates: TaskDateEntry[];
+  estimatedHoursInput: string;
+}
+
+function draftKey(taskId: string): string {
+  return `task-master:draft:${taskId}`;
+}
+
+function loadDraft(taskId: string): TaskDraft | null {
+  try {
+    const raw = localStorage.getItem(draftKey(taskId));
+    return raw ? (JSON.parse(raw) as TaskDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(taskId: string, draft: TaskDraft) {
+  try {
+    localStorage.setItem(draftKey(taskId), JSON.stringify(draft));
+  } catch {
+    // localStorage may be unavailable (e.g. private browsing) — drafts just won't survive a refresh.
+  }
+}
+
+function clearDraft(taskId: string) {
+  localStorage.removeItem(draftKey(taskId));
+}
+
 function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.round(diffMs / 60000);
@@ -53,22 +87,23 @@ function formatRelativeTime(iso: string): string {
 }
 
 export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, isOnline }: TaskDetailProps) {
-  const [title, setTitle] = useState(task.title);
+  const [draft] = useState(() => loadDraft(task.id));
+  const [title, setTitle] = useState(draft?.title ?? task.title);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const [status, setStatus] = useState<TaskStatus>(task.status);
-  const [notes, setNotes] = useState(task.notes ?? '');
-  const [isEditingNotes, setIsEditingNotes] = useState(!task.notes);
+  const [status, setStatus] = useState<TaskStatus>(draft?.status ?? task.status);
+  const [notes, setNotes] = useState(draft?.notes ?? task.notes ?? '');
+  const [isEditingNotes, setIsEditingNotes] = useState(draft ? true : !task.notes);
 
-  const [dates, setDates] = useState<TaskDateEntry[]>(task.dates ?? []);
+  const [dates, setDates] = useState<TaskDateEntry[]>(draft?.dates ?? task.dates ?? []);
   const [dateError, setDateError] = useState<string | null>(null);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [estimatedHoursInput, setEstimatedHoursInput] = useState(
-    task.estimatedMinutes != null ? String(task.estimatedMinutes / 60) : '',
+    draft?.estimatedHoursInput ?? (task.estimatedMinutes != null ? String(task.estimatedMinutes / 60) : ''),
   );
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
+  const [chatInput, setChatInput] = usePersistedState(`task-master:chat-draft:${task.id}`, '');
   const [isChatting, setIsChatting] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
@@ -97,9 +132,28 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
     || JSON.stringify(dates) !== JSON.stringify(task.dates ?? [])
     || estimatedMinutes !== (task.estimatedMinutes ?? null);
 
+  useEffect(() => {
+    if (isDirty) {
+      saveDraft(task.id, { title, status, notes, dates, estimatedHoursInput });
+    } else {
+      clearDraft(task.id);
+    }
+  }, [task.id, isDirty, title, status, notes, dates, estimatedHoursInput]);
+
   function handleSave() {
+    clearDraft(task.id);
     onSave(task.id, { title, status, notes: notes || null, dates, estimatedMinutes });
     setIsEditingNotes(false);
+  }
+
+  function handleClose() {
+    clearDraft(task.id);
+    onClose();
+  }
+
+  function handleDeleteConfirmed() {
+    clearDraft(task.id);
+    onDelete(task.id);
   }
 
   function handleStatusChange(next: TaskStatus) {
@@ -209,7 +263,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
   }
 
   return (
-    <div className="task-detail-backdrop" onClick={onClose}>
+    <div className="task-detail-backdrop" onClick={handleClose}>
       <div className="task-detail" onClick={(e) => e.stopPropagation()}>
         <header className="task-detail-header">
           <input
@@ -217,7 +271,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <button type="button" className="task-detail-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="task-detail-close" onClick={handleClose} aria-label="Close">
             ×
           </button>
         </header>
@@ -420,7 +474,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
               <button type="button" className="secondary" onClick={() => setIsConfirmingDelete(false)}>
                 Cancel
               </button>
-              <button type="button" className="danger" onClick={() => onDelete(task.id)} disabled={!isOnline}>
+              <button type="button" className="danger" onClick={handleDeleteConfirmed} disabled={!isOnline}>
                 Delete
               </button>
             </div>
@@ -436,7 +490,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             </button>
           )}
           <div className="task-detail-footer-actions">
-            <button type="button" className="secondary" onClick={onClose}>
+            <button type="button" className="secondary" onClick={handleClose}>
               Cancel
             </button>
             <button

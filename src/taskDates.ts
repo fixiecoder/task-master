@@ -48,6 +48,21 @@ export function buildMonthGrid(monthDate: Date): Date[] {
   return days;
 }
 
+export function startOfWeek(date: Date): Date {
+  // Monday-first week: getDay() 0=Sun..6=Sat, shift so Monday=0.
+  const leadingDays = (date.getDay() + 6) % 7;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - leadingDays);
+}
+
+export function buildWeekGrid(weekDate: Date): Date[] {
+  const start = startOfWeek(weekDate);
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    days.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+  }
+  return days;
+}
+
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
