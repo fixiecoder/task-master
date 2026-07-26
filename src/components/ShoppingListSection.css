@@ -3,8 +3,8 @@
   flex-direction: column;
   gap: 8px;
   flex: 0 0 auto;
-  border-top: 1px dashed var(--ink-dim);
-  border-bottom: 1px dashed var(--ink-dim);
+  border-top: 1px solid var(--ink-dim);
+  border-bottom: 1px solid var(--ink-dim);
   padding: 14px 0;
 }
 
