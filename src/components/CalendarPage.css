@@ -246,6 +246,14 @@
   color: var(--ink-dim);
 }
 
+.day-detail-item-unscheduled { --status-color: var(--ink-dim); }
+
+.day-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .day-detail-add {
   align-self: flex-start;
   font-family: var(--font-mono);

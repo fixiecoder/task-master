@@ -9,6 +9,8 @@ import {
   subscribeToShoppingItems,
   toggleShoppingItemPurchased,
 } from '../api';
+import { syncWithRetry } from '../syncQueue';
+import { useOptimisticShoppingItems } from '../useOptimisticShoppingItems';
 import './ShoppingListSection.css';
 
 interface ShoppingListSectionProps {
@@ -30,6 +32,7 @@ function ItemRow({ item, showCheckbox, onTogglePurchased, onSetCategory, onDelet
       {showCheckbox && (
         <input
           type="checkbox"
+          className="shopping-checkbox"
           checked={item.purchased}
           onChange={() => onTogglePurchased(item)}
           aria-label={`Mark ${item.name} as purchased`}
@@ -82,8 +85,9 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
     );
   }, [taskId, isOnline]);
 
-  const shoppingListItems = items.filter((item) => !item.purchased);
-  const materials = items.filter((item) => item.purchased);
+  const { displayItems, setOverride, clearOverride } = useOptimisticShoppingItems(items);
+  const shoppingListItems = displayItems.filter((item) => !item.purchased);
+  const materials = displayItems.filter((item) => item.purchased);
 
   async function handleAddSubmit(e: FormEvent) {
     e.preventDefault();
@@ -119,12 +123,17 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
     }
   }
 
-  async function handleTogglePurchased(item: ShoppingItem) {
-    try {
-      await toggleShoppingItemPurchased(item.id, !item.purchased);
-    } catch {
-      setError("Couldn't update that item — try again.");
-    }
+  function handleTogglePurchased(item: ShoppingItem) {
+    const next = !item.purchased;
+    setOverride([item.id], next);
+    syncWithRetry(
+      `shopping-item:${item.id}`,
+      async () => { await toggleShoppingItemPurchased(item.id, next); },
+      () => {
+        clearOverride([item.id]);
+        setError("Couldn't update that item — try again.");
+      },
+    );
   }
 
   async function handleSetCategory(item: ShoppingItem, category: ShoppingCategory) {

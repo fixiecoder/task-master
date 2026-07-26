@@ -12,6 +12,7 @@ interface DayDetailModalProps {
   onClose: () => void;
   onSelectTask: (taskId: string) => void;
   onAddTask: () => void;
+  onAssignExisting: () => void;
 }
 
 const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -25,7 +26,7 @@ function parseDateKey(dateKey: string): Date {
   return new Date(year, month - 1, day);
 }
 
-export function DayDetailModal({ dateKey, entries, onClose, onSelectTask, onAddTask }: DayDetailModalProps) {
+export function DayDetailModal({ dateKey, entries, onClose, onSelectTask, onAddTask, onAssignExisting }: DayDetailModalProps) {
   return (
     <div className="day-detail-backdrop" onClick={onClose}>
       <div className="day-detail" onClick={(e) => e.stopPropagation()}>
@@ -56,7 +57,10 @@ export function DayDetailModal({ dateKey, entries, onClose, onSelectTask, onAddT
           </ul>
         )}
 
-        <button type="button" className="day-detail-add" onClick={onAddTask}>+ Add task</button>
+        <div className="day-detail-actions">
+          <button type="button" className="day-detail-add" onClick={onAddTask}>+ Add task</button>
+          <button type="button" className="day-detail-add" onClick={onAssignExisting}>+ Assign unscheduled</button>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { DATE_TYPE_LABELS, formatDuration, toDateKey, todayKey } from '../taskDa
 import { TaskDetail } from './TaskDetail';
 import { DayDetailModal } from './DayDetailModal';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
+import { UnscheduledTaskPickerModal } from './UnscheduledTaskPickerModal';
 import './CalendarPage.css';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -41,6 +42,7 @@ export function CalendarPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isAssignPickerOpen, setIsAssignPickerOpen] = useState(false);
 
   const entriesByDate = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
@@ -106,8 +108,31 @@ export function CalendarPage() {
     }
   }
 
+  async function handleAssignExistingTask(taskId: string) {
+    if (!selectedDayKey) return;
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    try {
+      const startEntry: TaskDateEntry = {
+        id: crypto.randomUUID(),
+        type: 'start',
+        date: selectedDayKey,
+        durationMinutes: null,
+      };
+      const updated = await updateTask(taskId, { dates: [...task.dates, startEntry] });
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      setIsAssignPickerOpen(false);
+    } catch {
+      setError('Could not assign that task — try again.');
+    }
+  }
+
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
   const selectedDayEntries = selectedDayKey ? entriesByDate.get(selectedDayKey) ?? [] : [];
+  const unscheduledTasks = useMemo(
+    () => tasks.filter((t) => (t.dates ?? []).length === 0),
+    [tasks],
+  );
 
   return (
     <div className="calendar-page">
@@ -173,6 +198,7 @@ export function CalendarPage() {
           onClose={() => setSelectedDayKey(null)}
           onSelectTask={setSelectedTaskId}
           onAddTask={() => setIsQuickAddOpen(true)}
+          onAssignExisting={() => setIsAssignPickerOpen(true)}
         />
       )}
 
@@ -180,6 +206,14 @@ export function CalendarPage() {
         <QuickAddTaskModal
           onClose={() => setIsQuickAddOpen(false)}
           onSave={handleQuickAddTask}
+        />
+      )}
+
+      {isAssignPickerOpen && (
+        <UnscheduledTaskPickerModal
+          tasks={unscheduledTasks}
+          onClose={() => setIsAssignPickerOpen(false)}
+          onAssignTask={handleAssignExistingTask}
         />
       )}
 

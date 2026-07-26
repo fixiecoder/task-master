@@ -10,10 +10,25 @@
 
 .shopping-list-header {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-dim);
+}
+
+.shopping-checkbox {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--stamp);
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .shopping-checkbox {
+    width: 26px;
+    height: 26px;
+  }
 }
 
 .materials-section {
@@ -48,9 +63,16 @@
 .shopping-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 14px;
   color: var(--ink);
+}
+
+@media (max-width: 600px) {
+  .shopping-item {
+    font-size: 15px;
+    gap: 12px;
+  }
 }
 
 .shopping-item.purchased .shopping-item-name {
@@ -69,7 +91,7 @@
 .shopping-category-pill {
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -77,7 +99,7 @@
   background: #f5efde;
   border: 1px solid var(--status-color, var(--ink-dim));
   border-radius: 3px;
-  padding: 3px 8px;
+  padding: 4px 9px;
 }
 
 .shopping-category-groceries { --status-color: var(--pine); }
@@ -95,14 +117,14 @@
 .shopping-category-choice {
   font: inherit;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-dim);
   background: transparent;
   border: 1px dashed var(--ink-dim);
   border-radius: 3px;
-  padding: 3px 7px;
+  padding: 5px 9px;
   cursor: pointer;
 }
 
@@ -113,13 +135,20 @@
 
 .shopping-item-remove {
   flex-shrink: 0;
-  font-size: 15px;
+  font-size: 20px;
   line-height: 1;
   color: var(--ink-dim);
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 4px 6px;
+}
+
+@media (max-width: 600px) {
+  .shopping-item-remove {
+    font-size: 22px;
+    padding: 6px 8px;
+  }
 }
 
 .shopping-item-remove:hover {
@@ -136,26 +165,38 @@
   flex: 1;
   font: inherit;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink);
   background: #f5efde;
   border: 1px solid rgba(36, 31, 22, 0.2);
-  border-radius: 3px;
-  padding: 8px 10px;
+  border-radius: 4px;
+  padding: 10px 12px;
 }
 
 .shopping-add-form button {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--kraft);
   background: var(--stamp);
   border: 1px solid var(--stamp);
-  border-radius: 3px;
-  padding: 8px 14px;
+  border-radius: 4px;
+  padding: 10px 16px;
   cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .shopping-add-form input {
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+
+  .shopping-add-form button {
+    font-size: 13px;
+    padding: 12px 18px;
+  }
 }
 
 .shopping-add-form button:disabled {

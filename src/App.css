@@ -26,19 +26,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   color: var(--chalk-dim);
   text-decoration: none;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: 4px;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .nav-link svg {
-  width: 19px;
-  height: 19px;
+  width: 21px;
+  height: 21px;
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .nav-link {
+    width: 46px;
+    height: 46px;
+  }
+
+  .nav-link svg {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 .nav-link:hover {
@@ -81,6 +93,9 @@
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   background: var(--board);
   border-top: 1px solid var(--rule);
   padding: 14px 32px 18px;

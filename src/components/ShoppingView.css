@@ -37,18 +37,36 @@
 }
 
 .shopping-category-tab {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
   color: var(--chalk-dim);
   background: transparent;
   border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 7px 12px;
+  border-radius: 4px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+}
+
+.shopping-category-tab svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .shopping-category-tab {
+    width: 44px;
+    height: 44px;
+  }
+
+  .shopping-category-tab svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .shopping-category-tab:hover {
@@ -77,15 +95,21 @@
 .shopping-group {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   background: var(--kraft);
-  border-radius: 3px;
-  padding: 12px 14px;
+  border-radius: 4px;
+  padding: 14px 16px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .shopping-group input[type='checkbox'] {
-  margin-top: 3px;
+  margin-top: 1px;
+}
+
+@media (max-width: 600px) {
+  .shopping-group {
+    padding: 16px;
+  }
 }
 
 .shopping-group.purchased .shopping-group-name {
@@ -108,20 +132,26 @@
 }
 
 .shopping-group-name {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
 }
 
 .shopping-group-count {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-dim);
 }
 
 .shopping-group-source {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-dim);
+}
+
+@media (max-width: 600px) {
+  .shopping-group-name {
+    font-size: 17px;
+  }
 }
 
 .shopping-group-task-link {
