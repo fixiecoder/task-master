@@ -261,6 +261,13 @@
   line-height: 1.4;
 }
 
+.task-card-date {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
 .task-card-notes-dot {
   flex-shrink: 0;
   margin-top: 5px;

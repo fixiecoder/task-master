@@ -63,6 +63,26 @@ export function buildWeekGrid(weekDate: Date): Date[] {
   return days;
 }
 
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+
+// Priority order for the single date shown on a task card: due date first
+// (the one deadline that matters), then a planned work day, then start.
+const PRIMARY_DATE_PRIORITY: TaskDateType[] = ['due', 'planned_work', 'start', 'completed'];
+
+export function primaryDisplayDate(dates: TaskDateEntry[] | undefined): TaskDateEntry | null {
+  if (!dates) return null;
+  for (const type of PRIMARY_DATE_PRIORITY) {
+    const entry = dates.find((d) => d.type === type);
+    if (entry) return entry;
+  }
+  return null;
+}
+
+export function formatShortDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return SHORT_DATE_FORMATTER.format(new Date(year, month - 1, day));
+}
+
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;

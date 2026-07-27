@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Task } from '../types';
 import { ProgressBar } from './ProgressBar';
 import type { ColumnId } from './KanbanColumn';
+import { DATE_TYPE_LABELS, formatShortDate, primaryDisplayDate } from '../taskDates';
 
 interface TaskCardProps {
   task: Task;
@@ -89,6 +90,8 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
     };
   }, [task, onDragStart, onTouchDrop, onTouchHover]);
 
+  const dateEntry = primaryDisplayDate(task.dates);
+
   return (
     <button
       ref={cardRef}
@@ -100,6 +103,11 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
     >
       <span className="task-card-body">
         <span className="task-card-title">{task.title}</span>
+        {dateEntry && (
+          <span className="task-card-date" title={DATE_TYPE_LABELS[dateEntry.type]}>
+            {DATE_TYPE_LABELS[dateEntry.type]} {formatShortDate(dateEntry.date)}
+          </span>
+        )}
         <ProgressBar task={task} />
       </span>
       {task.notes && <span className="task-card-notes-dot" title="Has notes" />}
