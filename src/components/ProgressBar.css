@@ -4,7 +4,7 @@
   height: 6px;
   border-radius: 2px;
   overflow: hidden;
-  background: rgba(36, 31, 22, 0.12);
+  background: rgba(var(--ink-rgb), 0.12);
   margin-top: 6px;
 }
 
@@ -13,7 +13,7 @@
 }
 
 .progress-segment + .progress-segment {
-  border-left: 1px solid rgba(36, 31, 22, 0.35);
+  border-left: 1px solid rgba(var(--ink-rgb), 0.35);
 }
 
 .progress-green { background: var(--pine); }

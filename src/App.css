@@ -12,7 +12,7 @@
   padding: 14px 32px;
   background: var(--board-raised);
   border-bottom: 1px solid var(--rule);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 0 rgba(var(--shadow-rgb), 0.4);
   gap: 12px;
 }
 
@@ -60,7 +60,7 @@
 .nav-link.active {
   color: var(--chalk);
   border-color: var(--rule);
-  background: rgba(242, 238, 226, 0.06);
+  background: rgba(var(--chalk-rgb), 0.06);
 }
 
 .account {
@@ -114,7 +114,7 @@
   background: var(--terminal-bg);
   border: 1px solid var(--terminal-text-dim);
   border-radius: 4px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(var(--shadow-rgb), 0.3), 0 8px 24px rgba(var(--shadow-rgb), 0.35);
 }
 
 .prompt-bar-prefix {

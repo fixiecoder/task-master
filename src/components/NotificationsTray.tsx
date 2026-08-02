@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../useNotifications';
 import { markAllNotificationsRead, markNotificationRead } from '../notifications';
 import './NotificationsTray.css';
+import { BellIcon } from '../icons';
 
 export function NotificationsTray() {
   const { notifications, unreadCount } = useNotifications();
@@ -78,19 +79,5 @@ export function NotificationsTray() {
         </>
       )}
     </div>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 3c-3.31 0-6 2.69-6 6v3.5L4 15v1h16v-1l-2-2.5V9c0-3.31-2.69-6-6-6z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M9.5 18a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
   );
 }

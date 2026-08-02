@@ -14,7 +14,7 @@
 }
 
 .board-error {
-  color: #e0715a;
+  color: var(--danger-soft);
   font-size: 14px;
 }
 
@@ -57,13 +57,13 @@
   padding: 4px 14px 16px;
   gap: 12px;
   min-height: 0;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 6px 16px rgba(var(--shadow-rgb), 0.28);
   transition: box-shadow 0.15s, background-color 0.15s;
 }
 
 .kanban-column.drag-over {
   background: var(--kraft-dim);
-  box-shadow: 0 0 0 2px var(--stamp), 0 6px 16px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 0 2px var(--stamp), 0 6px 16px rgba(var(--shadow-rgb), 0.28);
 }
 
 .kanban-column-header {
@@ -108,7 +108,7 @@
 .start-date-prompt-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11, 18, 16, 0.65);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,7 +124,7 @@
   background: var(--kraft);
   border-radius: 4px;
   padding: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(var(--shadow-rgb), 0.4);
 }
 
 .start-date-prompt-label {
@@ -136,8 +136,8 @@
   font: inherit;
   font-size: 15px;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
   border-radius: 3px;
   padding: 10px 12px;
 }
@@ -167,7 +167,7 @@
 .start-date-prompt-actions button[type='button'] {
   color: var(--ink-dim);
   background: transparent;
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
 }
 
 .start-date-prompt-actions button[type='submit'] {
@@ -216,8 +216,8 @@
   text-align: left;
   font: inherit;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.15);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.15);
   border-left: 3px solid var(--status-color, var(--ink-dim));
   border-radius: 2px;
   padding: 11px 12px 11px 14px;
@@ -227,7 +227,7 @@
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  box-shadow: 0 1px 2px rgba(36, 31, 22, 0.15);
+  box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.15);
 }
 
 .status-unscheduled .task-card { --status-color: var(--stamp-dim, var(--ink-dim)); }
@@ -237,7 +237,7 @@
 
 .task-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(36, 31, 22, 0.25);
+  box-shadow: 0 4px 10px rgba(var(--ink-rgb), 0.25);
 }
 
 .task-card:active {
@@ -282,7 +282,7 @@
 .task-detail-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11, 18, 16, 0.65);
+  background: var(--scrim);
   display: flex;
   justify-content: flex-end;
   z-index: 10;
@@ -299,7 +299,7 @@
   flex-direction: column;
   gap: 18px;
   overflow: hidden;
-  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.35);
+  box-shadow: -12px 0 32px rgba(var(--shadow-rgb), 0.35);
 }
 
 .task-detail::before {
@@ -478,7 +478,7 @@
 }
 
 .task-detail-dates-error {
-  color: #e0715a;
+  color: var(--danger-soft);
   font-size: 12px;
 }
 
@@ -513,7 +513,7 @@
 .task-date-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11, 18, 16, 0.65);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,7 +530,7 @@
   color: var(--ink);
   border-radius: 4px;
   padding: 22px 22px 18px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(var(--shadow-rgb), 0.4);
 }
 
 .task-date-modal-header {
@@ -591,8 +591,8 @@
   width: 80px;
   font: inherit;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
   border-radius: 3px;
   padding: 6px 8px;
 }
@@ -645,8 +645,8 @@
   font: inherit;
   font-size: 12px;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.15);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.15);
   border-radius: 2px;
   padding: 6px 0;
   cursor: pointer;
@@ -685,8 +685,8 @@
   width: 80px;
   font: inherit;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
   border-radius: 3px;
   padding: 6px 8px;
 }
@@ -734,8 +734,8 @@
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
   border-radius: 3px;
   padding: 12px;
   resize: vertical;
@@ -782,7 +782,7 @@
 .markdown-preview code {
   font-family: var(--font-mono);
   font-size: 0.9em;
-  background: rgba(36, 31, 22, 0.08);
+  background: rgba(var(--ink-rgb), 0.08);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -874,7 +874,7 @@
 }
 
 .task-chat-brain.smart-on {
-  color: #e8579c;
+  color: var(--highlight);
 }
 
 .task-chat-history {
@@ -892,10 +892,10 @@
   display: flex;
   flex-direction: column;
   background: var(--kraft);
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
   border-radius: 4px;
   padding: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(var(--shadow-rgb), 0.35);
 }
 
 .task-chat-history-empty {
@@ -922,7 +922,7 @@
 
 .task-chat-history-item:hover,
 .task-chat-history-item.active {
-  background: rgba(180, 64, 42, 0.1);
+  background: rgba(var(--stamp-rgb), 0.1);
 }
 
 .task-chat-history-item-title {
@@ -963,8 +963,8 @@
 .task-chat-message-assistant {
   align-self: flex-start;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.15);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.15);
 }
 
 .task-chat-message .markdown-preview {
@@ -984,7 +984,7 @@
 }
 
 .task-chat-error {
-  color: #b4402a;
+  color: var(--stamp);
   font-size: 13px;
 }
 
@@ -1064,7 +1064,7 @@
 }
 
 .task-detail-delete:hover:not(:disabled) {
-  color: #b0392b;
+  color: var(--danger);
 }
 
 .task-detail-delete:disabled {
@@ -1083,12 +1083,12 @@
 
 .task-detail-footer .danger {
   color: var(--kraft);
-  background: #b0392b;
-  border: 1px solid #b0392b;
+  background: var(--danger);
+  border: 1px solid var(--danger);
 }
 
 .task-detail-footer .danger:hover:not(:disabled) {
-  background: #94301f;
+  background: var(--danger-dim);
 }
 
 .task-detail-footer .danger:disabled {
@@ -1111,7 +1111,7 @@
 .task-detail-footer .secondary {
   color: var(--ink-dim);
   background: transparent;
-  border: 1px solid rgba(36, 31, 22, 0.25);
+  border: 1px solid rgba(var(--ink-rgb), 0.25);
 }
 
 .task-detail-footer .secondary:hover {

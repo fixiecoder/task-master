@@ -55,7 +55,7 @@ export function AuthGate({ children }: AuthGateProps) {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#0f172a',
+      backgroundColor: 'var(--board)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -63,8 +63,8 @@ export function AuthGate({ children }: AuthGateProps) {
       <div style={{
         width: '28px',
         height: '28px',
-        border: '3px solid #1e3a6e',
-        borderTopColor: '#3b82f6',
+        border: '3px solid var(--rule)',
+        borderTopColor: 'var(--stamp)',
         borderRadius: '50%',
         animation: 'spin 0.7s linear infinite',
       }} />

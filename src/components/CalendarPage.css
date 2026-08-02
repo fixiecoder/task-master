@@ -218,7 +218,7 @@
   font: inherit;
   font-size: 11px;
   color: var(--ink);
-  background: #f5efde;
+  background: var(--kraft-card);
   border: none;
   border-left: 2px solid var(--status-color, var(--ink-dim));
   border-radius: 2px;
@@ -257,7 +257,7 @@
   color: var(--ink);
   border: 1px solid var(--ink-dim);
   border-radius: 4px;
-  box-shadow: 0 6px 16px rgba(11, 18, 16, 0.25);
+  box-shadow: 0 6px 16px rgba(var(--board-dark-rgb), 0.25);
   padding: 4px;
 }
 
@@ -274,7 +274,7 @@
 }
 
 .context-menu-item:hover {
-  background: rgba(11, 18, 16, 0.08);
+  background: rgba(var(--board-dark-rgb), 0.08);
 }
 
 /* ---- Day detail modal ---- */
@@ -282,7 +282,7 @@
 .day-detail-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11, 18, 16, 0.65);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -300,7 +300,7 @@
   color: var(--ink);
   border-radius: 4px;
   padding: 22px 22px 18px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(var(--shadow-rgb), 0.4);
 }
 
 .day-detail-header {
@@ -352,7 +352,7 @@
   gap: 2px;
   text-align: left;
   font: inherit;
-  background: #f5efde;
+  background: var(--kraft-card);
   border: none;
   border-left: 3px solid var(--status-color, var(--ink-dim));
   border-radius: 2px;
@@ -411,7 +411,7 @@
 .quick-add-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11, 18, 16, 0.65);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -427,14 +427,14 @@
   background: var(--kraft);
   border-radius: 4px;
   padding: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(var(--shadow-rgb), 0.4);
 }
 
 .quick-add input {
   font: inherit;
   font-size: 15px;
   color: var(--ink);
-  background: #f5efde;
+  background: var(--kraft-card);
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 10px 12px;

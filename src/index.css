@@ -21,7 +21,7 @@
   --ink-dim: #5c5847;
   --chalk: #f2eee2;
   --chalk-dim: #90a396;
-  --rule: rgba(242, 238, 226, 0.12);
+  --rule: rgba(var(--chalk-rgb), 0.12);
 
   --stamp: #b4402a;
   --stamp-dim: #8a2f1d;
@@ -41,6 +41,24 @@
   --panel-bg: var(--board-raised);
   --panel-border: var(--rule);
   --text-dim: var(--chalk-dim);
+
+  /* Semantic surfaces/status — everything below is derived from the palette
+     above, so swapping a theme only ever means editing this block. */
+  --kraft-card: #f5efde;
+  --danger: #b0392b;
+  --danger-dim: #94301f;
+  --danger-soft: #e0715a;
+  --highlight: #e8579c;
+
+  /* RGB triplets for rgba() overlays/shadows, kept in step with the hex
+     values above so tints never drift out of sync with the theme. */
+  --ink-rgb: 36, 31, 22;
+  --chalk-rgb: 242, 238, 226;
+  --board-dark-rgb: 11, 18, 16;
+  --stamp-rgb: 180, 64, 42;
+  --shadow-rgb: 0, 0, 0;
+
+  --scrim: rgba(var(--board-dark-rgb), 0.65);
 }
 
 * {
@@ -57,7 +75,7 @@ body {
 
 body {
   background:
-    radial-gradient(ellipse at top, rgba(242, 238, 226, 0.04), transparent 60%),
+    radial-gradient(ellipse at top, rgba(var(--chalk-rgb), 0.04), transparent 60%),
     var(--board);
 }
 

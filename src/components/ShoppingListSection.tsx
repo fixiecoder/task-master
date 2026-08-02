@@ -5,6 +5,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   deleteShoppingItem,
+  renameShoppingItem,
   setShoppingItemCategory,
   subscribeToShoppingItems,
   toggleShoppingItemPurchased,
@@ -23,11 +24,12 @@ interface ItemRowProps {
   item: ShoppingItem;
   showCheckbox: boolean;
   onTogglePurchased: (item: ShoppingItem) => void;
-  onSetCategory: (item: ShoppingItem, category: ShoppingCategory) => void;
+  onEditName: (item: ShoppingItem) => void;
+  onEditCategory: (item: ShoppingItem) => void;
   onDelete: (item: ShoppingItem) => void;
 }
 
-function ItemRow({ item, showCheckbox, onTogglePurchased, onSetCategory, onDelete }: ItemRowProps) {
+function ItemRow({ item, showCheckbox, onTogglePurchased, onEditName, onEditCategory, onDelete }: ItemRowProps) {
   return (
     <li className={`shopping-item ${item.purchased && showCheckbox ? 'purchased' : ''}`}>
       {showCheckbox && (
@@ -39,25 +41,20 @@ function ItemRow({ item, showCheckbox, onTogglePurchased, onSetCategory, onDelet
           aria-label={`Mark ${item.name} as purchased`}
         />
       )}
-      <span className="shopping-item-name">{item.name}</span>
-      {item.category ? (
-        <span className={`shopping-category-pill shopping-category-${item.category}`}>
-          {CATEGORY_LABELS[item.category]}
-        </span>
-      ) : (
-        <span className="shopping-category-picker">
-          {CATEGORY_ORDER.map((category) => (
-            <button
-              key={category}
-              type="button"
-              className="shopping-category-choice"
-              onClick={() => onSetCategory(item, category)}
-            >
-              {CATEGORY_LABELS[category]}
-            </button>
-          ))}
-        </span>
-      )}
+      <button
+        type="button"
+        className="shopping-item-name shopping-item-name-button"
+        onClick={() => onEditName(item)}
+      >
+        {item.name}
+      </button>
+      <button
+        type="button"
+        className={`shopping-category-pill shopping-category-pill-button ${item.category ? `shopping-category-${item.category}` : 'shopping-category-unset'}`}
+        onClick={() => onEditCategory(item)}
+      >
+        {item.category ? CATEGORY_LABELS[item.category] : 'Category'}
+      </button>
       <button
         type="button"
         className="shopping-item-remove"
@@ -70,6 +67,76 @@ function ItemRow({ item, showCheckbox, onTogglePurchased, onSetCategory, onDelet
   );
 }
 
+interface EditNameModalProps {
+  item: ShoppingItem;
+  onClose: () => void;
+  onSave: (name: string) => void;
+}
+
+function EditNameModal({ item, onClose, onSave }: EditNameModalProps) {
+  const [name, setName] = useState(item.name);
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onSave(trimmed);
+  }
+
+  return (
+    <div className="shopping-item-modal-backdrop" onClick={onClose}>
+      <form className="shopping-item-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+        <header className="shopping-item-modal-header">
+          <h3>Edit item</h3>
+          <button type="button" className="shopping-item-modal-close" onClick={onClose} aria-label="Close">×</button>
+        </header>
+        <input
+          type="text"
+          className="shopping-item-modal-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+        />
+        <div className="shopping-item-modal-actions">
+          <button type="button" className="secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="primary" disabled={!name.trim()}>Save</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+interface EditCategoryModalProps {
+  item: ShoppingItem;
+  onClose: () => void;
+  onSelect: (category: ShoppingCategory) => void;
+}
+
+function EditCategoryModal({ item, onClose, onSelect }: EditCategoryModalProps) {
+  return (
+    <div className="shopping-item-modal-backdrop" onClick={onClose}>
+      <div className="shopping-item-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="shopping-item-modal-header">
+          <h3>Set category</h3>
+          <button type="button" className="shopping-item-modal-close" onClick={onClose} aria-label="Close">×</button>
+        </header>
+        <div className="shopping-category-modal-options">
+          {CATEGORY_ORDER.map((category) => (
+            <button
+              key={category}
+              type="button"
+              className={`shopping-category-modal-option ${item.category === category ? 'active' : ''}`}
+              onClick={() => onSelect(category)}
+            >
+              {CATEGORY_LABELS[category]}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionProps) {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +144,8 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
   const [isAdding, setIsAdding] = useState(false);
   const [materialText, setMaterialText] = usePersistedState(`task-master:shopping-material-draft:${taskId}`, '');
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
+  const [editingNameItem, setEditingNameItem] = useState<ShoppingItem | null>(null);
+  const [editingCategoryItem, setEditingCategoryItem] = useState<ShoppingItem | null>(null);
 
   useEffect(() => {
     if (!isOnline) return;
@@ -140,8 +209,18 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
   async function handleSetCategory(item: ShoppingItem, category: ShoppingCategory) {
     try {
       await setShoppingItemCategory(item.id, category);
+      setEditingCategoryItem(null);
     } catch {
       setError("Couldn't set that category — try again.");
+    }
+  }
+
+  async function handleRename(item: ShoppingItem, name: string) {
+    try {
+      await renameShoppingItem(item.id, name);
+      setEditingNameItem(null);
+    } catch {
+      setError("Couldn't rename that item — try again.");
     }
   }
 
@@ -183,7 +262,8 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
                 item={item}
                 showCheckbox
                 onTogglePurchased={handleTogglePurchased}
-                onSetCategory={handleSetCategory}
+                onEditName={setEditingNameItem}
+                onEditCategory={setEditingCategoryItem}
                 onDelete={handleDelete}
               />
             ))}
@@ -218,7 +298,8 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
                 item={item}
                 showCheckbox={false}
                 onTogglePurchased={handleTogglePurchased}
-                onSetCategory={handleSetCategory}
+                onEditName={setEditingNameItem}
+                onEditCategory={setEditingCategoryItem}
                 onDelete={handleDelete}
               />
             ))}
@@ -237,6 +318,22 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
             </button>
           </form>
         </div>
+      )}
+
+      {editingNameItem && (
+        <EditNameModal
+          item={editingNameItem}
+          onClose={() => setEditingNameItem(null)}
+          onSave={(name) => handleRename(editingNameItem, name)}
+        />
+      )}
+
+      {editingCategoryItem && (
+        <EditCategoryModal
+          item={editingCategoryItem}
+          onClose={() => setEditingCategoryItem(null)}
+          onSelect={(category) => handleSetCategory(editingCategoryItem, category)}
+        />
       )}
     </>
   );

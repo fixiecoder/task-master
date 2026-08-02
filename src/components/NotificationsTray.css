@@ -58,7 +58,7 @@
   background: var(--board-raised);
   border: 1px solid var(--rule);
   border-radius: 4px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 32px rgba(var(--shadow-rgb), 0.45);
   z-index: 21;
   overflow: hidden;
 }
@@ -116,7 +116,7 @@
 }
 
 .tray-item.unread {
-  background: rgba(242, 238, 226, 0.05);
+  background: rgba(var(--chalk-rgb), 0.05);
 }
 
 .tray-item-title {

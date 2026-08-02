@@ -49,7 +49,7 @@
 }
 
 .shopping-list-error {
-  color: #b0392b;
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -88,6 +88,20 @@
   white-space: nowrap;
 }
 
+.shopping-item-name-button {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.shopping-item-name-button:hover {
+  text-decoration: underline;
+}
+
 .shopping-category-pill {
   flex-shrink: 0;
   font-family: var(--font-mono);
@@ -96,7 +110,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
-  background: #f5efde;
+  background: var(--kraft-card);
   border: 1px solid var(--status-color, var(--ink-dim));
   border-radius: 3px;
   padding: 4px 9px;
@@ -106,31 +120,149 @@
 .shopping-category-diy { --status-color: var(--ochre); }
 .shopping-category-electronics { --status-color: var(--stamp); }
 .shopping-category-other { --status-color: var(--ink-dim); }
+.shopping-category-unset { --status-color: var(--ink-dim); color: var(--ink-dim); border-style: dashed; }
 
-.shopping-category-picker {
-  flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.shopping-category-choice {
-  font: inherit;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-  background: transparent;
-  border: 1px dashed var(--ink-dim);
-  border-radius: 3px;
-  padding: 5px 9px;
+.shopping-category-pill-button {
   cursor: pointer;
 }
 
-.shopping-category-choice:hover {
+.shopping-category-pill-button:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.shopping-item-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 40;
+}
+
+.shopping-item-modal {
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--kraft);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 16px 40px rgba(var(--shadow-rgb), 0.4);
+}
+
+.shopping-item-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shopping-item-modal-header h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.shopping-item-modal-close {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.shopping-item-modal-close:hover {
+  color: var(--ink);
+}
+
+.shopping-item-modal-input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.shopping-item-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.shopping-item-modal-actions button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.shopping-item-modal-actions .secondary {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid rgba(var(--ink-rgb), 0.25);
+}
+
+.shopping-item-modal-actions .secondary:hover {
+  color: var(--ink);
+}
+
+.shopping-item-modal-actions .primary {
+  color: var(--kraft);
+  background: var(--stamp);
+  border: 1px solid var(--stamp);
+}
+
+.shopping-item-modal-actions .primary:hover:not(:disabled) {
+  background: var(--stamp-dim);
+}
+
+.shopping-item-modal-actions .primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.shopping-category-modal-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shopping-category-modal-option {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1.5px dashed var(--ink-dim);
+  border-radius: 3px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.shopping-category-modal-option:hover {
   color: var(--ink);
   border-color: var(--ink);
+}
+
+.shopping-category-modal-option.active {
+  border-style: solid;
+  border-color: var(--stamp);
+  color: var(--stamp);
 }
 
 .shopping-item-remove {
@@ -167,8 +299,8 @@
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--ink);
-  background: #f5efde;
-  border: 1px solid rgba(36, 31, 22, 0.2);
+  background: var(--kraft-card);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
   border-radius: 4px;
   padding: 10px 12px;
 }

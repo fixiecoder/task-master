@@ -8,52 +8,7 @@ import { useTasks } from '../useTasks';
 import { TaskDetail } from './TaskDetail';
 import './ShoppingListSection.css';
 import './ShoppingView.css';
-
-function AllIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.2" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.2" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.2" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" />
-    </svg>
-  );
-}
-
-function GroceriesIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 10c-3 0-5 2.1-5 5.2 0 3 1.8 5.3 3.6 5.3.8 0 1-.3 1.4-.3s.6.3 1.4.3c1.8 0 3.6-2.5 3.6-5.5 0-2.8-1.6-4.8-3.6-5" />
-      <path d="M12 10c0-1.6.9-2.8 2.2-3.3" />
-      <path d="M11.6 7c0-1-.9-1.8-2-2" />
-    </svg>
-  );
-}
-
-function DiyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20.2 8.8a4.5 4.5 0 0 1-5.9 5.9L7.5 21.5 4 18l6.8-6.8a4.5 4.5 0 0 1 5.9-5.9l-3 3 1.6 1.6 3-3Z" />
-    </svg>
-  );
-}
-
-function ElectronicsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M13 3 5 14h5l-1 8 9-12h-5l1-7Z" />
-    </svg>
-  );
-}
-
-function OtherIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12.6 3.5 20 10.9a2 2 0 0 1 0 2.8l-6.3 6.3a2 2 0 0 1-2.8 0L3.5 12.6V6a2.5 2.5 0 0 1 2.5-2.5h6.6Z" />
-      <circle cx="8.2" cy="8.2" r="1.3" />
-    </svg>
-  );
-}
+import { AllCategoriesIcon, DiyIcon, ElectronicsIcon, GroceriesIcon, OtherIcon } from '../icons';
 
 const CATEGORY_ICONS: Record<ShoppingCategory, typeof GroceriesIcon> = {
   groceries: GroceriesIcon,
@@ -180,7 +135,7 @@ export function ShoppingView() {
             aria-label="All"
             title="All"
           >
-            <AllIcon />
+            <AllCategoriesIcon />
           </button>
           {CATEGORY_ORDER.map((category) => {
             const Icon = CATEGORY_ICONS[category];

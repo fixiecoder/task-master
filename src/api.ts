@@ -273,6 +273,15 @@ export async function setShoppingItemCategory(id: string, category: ShoppingCate
   return res.json() as Promise<ShoppingItem>;
 }
 
+export async function renameShoppingItem(id: string, name: string): Promise<ShoppingItem> {
+  const res = await apiFetch(`/shopping-items/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`renameShoppingItem failed: ${res.status}`);
+  return res.json() as Promise<ShoppingItem>;
+}
+
 export async function toggleShoppingItemPurchased(id: string, purchased: boolean): Promise<ShoppingItem> {
   const res = await apiFetch(`/shopping-items/${id}`, {
     method: 'PATCH',

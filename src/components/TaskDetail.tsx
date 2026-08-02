@@ -14,6 +14,7 @@ import { DATE_TYPE_LABELS, formatDuration, withDateStamp } from '../taskDates';
 import { usePersistedState } from '../usePersistedState';
 import { ShoppingListSection } from './ShoppingListSection';
 import { TaskDateModal } from './TaskDateModal';
+import { BrainIcon } from '../icons';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: 'To do',
@@ -386,12 +387,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
                   aria-pressed={isSmartMode}
                   title={isSmartMode ? 'Smart mode on — using Sonnet' : 'Smart mode off — using Haiku'}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M9.5 3.5a2.5 2.5 0 0 0-2.5 2.5v.2A2.8 2.8 0 0 0 5 8.8v.4a2.6 2.6 0 0 0-1 4.9 2.7 2.7 0 0 0 1.6 3.8A2.6 2.6 0 0 0 8 20.5a2.5 2.5 0 0 0 1.5-.5" />
-                    <path d="M9.5 3.5c.6 0 1.1.2 1.5.5V19c0 .8-.7 1.5-1.5 1.5" />
-                    <path d="M14.5 3.5a2.5 2.5 0 0 1 2.5 2.5v.2A2.8 2.8 0 0 1 19 8.8v.4a2.6 2.6 0 0 1 1 4.9 2.7 2.7 0 0 1-1.6 3.8A2.6 2.6 0 0 1 16 20.5a2.5 2.5 0 0 1-1.5-.5" />
-                    <path d="M14.5 3.5c-.6 0-1.1.2-1.5.5V19c0 .8.7 1.5 1.5 1.5" />
-                  </svg>
+                  <BrainIcon />
                 </button>
                 <button type="button" className="link-button" onClick={handleNewChat}>
                   New chat
