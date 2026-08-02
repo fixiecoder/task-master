@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Timestamp } from 'firebase/firestore';
 import type { ShoppingCategory, ShoppingItem, Task } from '../types';
 import { CATEGORY_LABELS, CATEGORY_ORDER, subscribeToShoppingItems, togglePurchaseGroup } from '../api';
 import { syncWithRetry } from '../syncQueue';
@@ -17,12 +18,19 @@ const CATEGORY_ICONS: Record<ShoppingCategory, typeof GroceriesIcon> = {
   other: OtherIcon,
 };
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 interface ShoppingGroup {
   normalizedName: string;
   name: string;
   category: ShoppingCategory | null;
   items: ShoppingItem[];
   allPurchased: boolean;
+  purchasedAtMillis: number | null;
+}
+
+function toMillis(value: unknown): number | null {
+  return value instanceof Timestamp ? value.toMillis() : null;
 }
 
 function groupItems(items: ShoppingItem[]): ShoppingGroup[] {
@@ -34,20 +42,32 @@ function groupItems(items: ShoppingItem[]): ShoppingGroup[] {
   }
 
   return [...map.values()]
-    .map((group) => ({
-      normalizedName: group[0].normalizedName,
-      name: group[0].name,
-      category: group.find((i) => i.category !== null)?.category ?? null,
-      items: group,
-      allPurchased: group.every((i) => i.purchased),
-    }))
+    .map((group) => {
+      const purchasedAtMillis = group
+        .map((i) => toMillis(i.purchasedAt))
+        .filter((ms): ms is number => ms !== null)
+        .reduce((max, ms) => (max === null || ms > max ? ms : max), null as number | null);
+      return {
+        normalizedName: group[0].normalizedName,
+        name: group[0].name,
+        category: group.find((i) => i.category !== null)?.category ?? null,
+        items: group,
+        allPurchased: group.every((i) => i.purchased),
+        purchasedAtMillis,
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function isOldPurchase(group: ShoppingGroup): boolean {
+  return group.allPurchased && group.purchasedAtMillis !== null && Date.now() - group.purchasedAtMillis > ONE_DAY_MS;
 }
 
 export function ShoppingView() {
   const { tasks, isOnline, refresh, saveTask, removeTask } = useTasks();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showOldPurchases, setShowOldPurchases] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const categoryParam = searchParams.get('category');
@@ -79,10 +99,16 @@ export function ShoppingView() {
 
   const { displayItems, setOverride, clearOverride } = useOptimisticShoppingItems(items);
 
-  const groups = useMemo(() => {
+  const { currentGroups, oldGroups } = useMemo(() => {
     const all = groupItems(displayItems);
-    return selectedCategory === 'all' ? all : all.filter((g) => g.category === selectedCategory);
+    const filtered = selectedCategory === 'all' ? all : all.filter((g) => g.category === selectedCategory);
+    return {
+      currentGroups: filtered.filter((g) => !isOldPurchase(g)),
+      oldGroups: filtered.filter((g) => isOldPurchase(g)),
+    };
   }, [displayItems, selectedCategory]);
+
+  const groups = showOldPurchases ? [...currentGroups, ...oldGroups] : currentGroups;
 
   function handleToggleGroup(group: ShoppingGroup) {
     const next = !group.allPurchased;
@@ -155,14 +181,32 @@ export function ShoppingView() {
         </div>
       </div>
 
+      {oldGroups.length > 0 && (
+        <label className="shopping-old-purchases-toggle">
+          <input
+            type="checkbox"
+            checked={showOldPurchases}
+            onChange={(e) => setShowOldPurchases(e.target.checked)}
+          />
+          Show/Hide old purchases
+        </label>
+      )}
+
       {groups.length === 0 ? (
         <p className="shopping-page-empty">Nothing here yet — add items from a task's shopping list.</p>
       ) : (
         <ul className="shopping-group-list">
-          {groups.map((group) => {
+          {groups.map((group, index) => {
             const taskTitles = [...new Map(group.items.map((i) => [i.taskId, i.taskTitle])).entries()];
+            const isFirstOld = index === currentGroups.length && oldGroups.length > 0;
             return (
-              <li key={group.normalizedName} className={`shopping-group ${group.allPurchased ? 'purchased' : ''}`}>
+              <Fragment key={group.normalizedName}>
+                {isFirstOld && (
+                  <li className="shopping-old-purchases-divider" aria-hidden="true">
+                    Older purchases
+                  </li>
+                )}
+                <li className={`shopping-group ${group.allPurchased ? 'purchased' : ''}`}>
                 <input
                   type="checkbox"
                   className="shopping-checkbox"
@@ -199,6 +243,7 @@ export function ShoppingView() {
                   </div>
                 </div>
               </li>
+              </Fragment>
             );
           })}
         </ul>

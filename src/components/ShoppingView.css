@@ -84,6 +84,33 @@
   color: var(--chalk-dim);
 }
 
+.shopping-old-purchases-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--chalk-dim);
+  cursor: pointer;
+}
+
+.shopping-old-purchases-toggle input {
+  accent-color: var(--stamp);
+  cursor: pointer;
+}
+
+.shopping-old-purchases-divider {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  padding: 10px 2px 2px;
+  border-top: 1px solid var(--rule);
+  margin-top: 6px;
+}
+
 .shopping-group-list {
   display: flex;
   flex-direction: column;
