@@ -100,7 +100,8 @@ export function ShoppingView() {
   const { displayItems, setOverride, clearOverride } = useOptimisticShoppingItems(items);
 
   const { currentGroups, oldGroups } = useMemo(() => {
-    const all = groupItems(displayItems);
+    const active = displayItems.filter((item) => !item.archived);
+    const all = groupItems(active);
     const filtered = selectedCategory === 'all' ? all : all.filter((g) => g.category === selectedCategory);
     return {
       currentGroups: filtered.filter((g) => !isOldPurchase(g)),

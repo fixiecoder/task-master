@@ -31,6 +31,7 @@ export interface ShoppingItem {
   category: ShoppingCategory | null;
   purchased: boolean;
   purchasedAt: unknown;
+  archived: boolean;
   source: 'ai' | 'manual';
   createdAt: unknown;
   updatedAt: unknown;
