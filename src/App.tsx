@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { KanbanBoard } from './components/KanbanBoard';
 import { CalendarPage } from './components/CalendarPage';
 import { ShoppingView } from './components/ShoppingView';
+import { ProjectsView } from './components/ProjectsView';
 import { NavBar } from './components/NavBar';
 import { NotificationsTray } from './components/NotificationsTray';
 import { NotificationSettingsPage } from './components/NotificationSettings';
@@ -26,6 +27,7 @@ function App() {
           <Route path="/" element={<KanbanBoard />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/shopping" element={<ShoppingView />} />
+          <Route path="/projects" element={<ProjectsView />} />
           <Route path="/settings" element={<NotificationSettingsPage />} />
         </Routes>
       </main>

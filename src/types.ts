@@ -16,9 +16,20 @@ export interface Task {
   notes: string | null;
   dates: TaskDateEntry[];
   estimatedMinutes: number | null;
+  projectId: string | null;
   createdAt: unknown;
   updatedAt: unknown;
 }
+
+export interface Project {
+  id: string;
+  name: string;
+  color: string | null;
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export type ProjectWithCount = Project & { taskCount: number };
 
 export type ShoppingCategory = 'groceries' | 'diy' | 'electronics' | 'other';
 

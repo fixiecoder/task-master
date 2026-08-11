@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Task } from '../types';
 import { createTask, updateTask } from '../api';
 import { useTasks } from '../useTasks';
+import { useProjects } from '../useProjects';
 import { KanbanColumn, type ColumnId } from './KanbanColumn';
 import { TaskDetail } from './TaskDetail';
 import { StartDatePromptModal } from './StartDatePromptModal';
@@ -27,6 +28,8 @@ function columnFor(task: Task): ColumnId {
 
 export function KanbanBoard() {
   const { tasks, setTasks, isLoading, error, setError, isOnline, refresh, saveTask, removeTask } = useTasks();
+  const { projects } = useProjects();
+  const projectsById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTaskId = searchParams.get('task');
   function setSelectedTaskId(id: string | null) {
@@ -94,7 +97,7 @@ export function KanbanBoard() {
     }
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
+  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
     try {
       await saveTask(id, updates);
       setSelectedTaskId(null);
@@ -132,6 +135,7 @@ export function KanbanBoard() {
               id={id}
               label={label}
               tasks={tasks.filter((t) => columnFor(t) === id)}
+              projectsById={projectsById}
               onOpenTask={(task) => setSelectedTaskId(task.id)}
               onDragStart={(task) => setDraggedTaskId(task.id)}
               onDrop={handleDrop}

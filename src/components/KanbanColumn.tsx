@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import type { Task } from '../types';
+import type { Project, Task } from '../types';
 import { usePersistedState } from '../usePersistedState';
 import { TaskCard } from './TaskCard';
 
@@ -9,6 +9,7 @@ interface KanbanColumnProps {
   id: ColumnId;
   label: string;
   tasks: Task[];
+  projectsById: Map<string, Project>;
   onOpenTask: (task: Task) => void;
   onDragStart: (task: Task) => void;
   onDrop: (id: ColumnId) => void;
@@ -22,6 +23,7 @@ export function KanbanColumn({
   id,
   label,
   tasks,
+  projectsById,
   onOpenTask,
   onDragStart,
   onDrop,
@@ -66,6 +68,7 @@ export function KanbanColumn({
           <TaskCard
             key={task.id}
             task={task}
+            project={task.projectId ? projectsById.get(task.projectId) : undefined}
             onOpen={onOpenTask}
             onDragStart={onDragStart}
             onTouchDrop={onDrop}

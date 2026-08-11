@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Task } from '../types';
+import type { Project, Task } from '../types';
 import { ProgressBar } from './ProgressBar';
 import type { ColumnId } from './KanbanColumn';
 import { DATE_TYPE_LABELS, formatShortDate, primaryDisplayDate } from '../taskDates';
 
 interface TaskCardProps {
   task: Task;
+  project?: Project;
   onOpen: (task: Task) => void;
   onDragStart: (task: Task) => void;
   onTouchDrop: (id: ColumnId) => void;
@@ -20,7 +21,7 @@ function columnUnderPoint(x: number, y: number): ColumnId | null {
   return (el?.dataset.kanbanStatus as ColumnId | undefined) ?? null;
 }
 
-export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover }: TaskCardProps) {
+export function TaskCard({ task, project, onOpen, onDragStart, onTouchDrop, onTouchHover }: TaskCardProps) {
   const cardRef = useRef<HTMLButtonElement>(null);
   const [isTouchDragging, setIsTouchDragging] = useState(false);
 
@@ -102,7 +103,16 @@ export function TaskCard({ task, onOpen, onDragStart, onTouchDrop, onTouchHover 
       onClick={() => onOpen(task)}
     >
       <span className="task-card-body">
-        <span className="task-card-title">{task.title}</span>
+        <span className="task-card-title">
+          {project && (
+            <span
+              className="task-card-project-dot"
+              style={{ backgroundColor: project.color ?? 'var(--chalk-dim)' }}
+              title={project.name}
+            />
+          )}
+          {task.title}
+        </span>
         {dateEntry && (
           <span className="task-card-date" title={DATE_TYPE_LABELS[dateEntry.type]}>
             {DATE_TYPE_LABELS[dateEntry.type]} {formatShortDate(dateEntry.date)}

@@ -51,6 +51,12 @@ export const ShoppingIcon = icon('ShoppingIcon', (
   </>
 ));
 
+export const ProjectsIcon = icon('ProjectsIcon', (
+  <>
+    <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h4.4l1.8 2h8.3A1.5 1.5 0 0 1 21.5 8.5v9A1.5 1.5 0 0 1 20 19H5.5A1.5 1.5 0 0 1 4 17.5v-11Z" />
+  </>
+));
+
 export const SettingsIcon = icon('SettingsIcon', (
   <>
     <circle cx="12" cy="12" r="3" />

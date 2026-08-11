@@ -138,7 +138,7 @@ export function CalendarPage() {
     updateParams({ month: monthKey, week: toDateKey(now) });
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
+  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
     try {
       await saveTask(id, updates);
       setSelectedTaskId(null);

@@ -44,7 +44,7 @@ export function useTasks() {
     return unsubscribe;
   }, [isOnline, refresh]);
 
-  async function saveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
+  async function saveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
     const updated = await updateTask(id, updates);
     setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
   }

@@ -1,8 +1,8 @@
 import { getIdToken } from 'firebase/auth';
 import { collection, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import type { ShoppingCategory, ShoppingItem, Task, TaskStatus } from './types';
-import { cacheTask, cacheTasks, deleteCachedTask, getCachedTask, getCachedTasks } from './db';
+import type { Project, ProjectWithCount, ShoppingCategory, ShoppingItem, Task, TaskStatus } from './types';
+import { cacheTask, cacheTasks, deleteCachedTask, getCachedTask, getCachedTasks, cacheProjects, getCachedProjects } from './db';
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -84,10 +84,10 @@ export async function getTask(id: string): Promise<Task> {
   }
 }
 
-export async function createTask(title: string, notes?: string): Promise<Task> {
+export async function createTask(title: string, notes?: string, projectId?: string | null): Promise<Task> {
   const res = await apiFetch('/tasks', {
     method: 'POST',
-    body: JSON.stringify({ title, notes }),
+    body: JSON.stringify({ title, notes, projectId }),
   });
   if (!res.ok) throw new Error(`createTask failed: ${res.status}`);
   const task = await res.json() as Task;
@@ -97,7 +97,7 @@ export async function createTask(title: string, notes?: string): Promise<Task> {
 
 export async function updateTask(
   id: string,
-  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>,
+  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>,
 ): Promise<Task> {
   const res = await apiFetch(`/tasks/${id}`, {
     method: 'PUT',
@@ -113,6 +113,73 @@ export async function deleteTask(id: string): Promise<void> {
   const res = await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`deleteTask failed: ${res.status}`);
   await deleteCachedTask(id);
+}
+
+export async function listProjects(): Promise<ProjectWithCount[]> {
+  if (!navigator.onLine) return getCachedProjects<ProjectWithCount>();
+
+  try {
+    const res = await apiFetch('/projects');
+    if (!res.ok) throw new Error(`listProjects failed: ${res.status}`);
+    const data = await res.json() as { projects: ProjectWithCount[] };
+    await cacheProjects(data.projects);
+    return data.projects;
+  } catch (err) {
+    const cached = await getCachedProjects<ProjectWithCount>();
+    if (cached.length > 0) return cached;
+    throw err;
+  }
+}
+
+// Live-syncs the signed-in user's projects across devices, same pattern as
+// subscribeToTasks — REST writes land in this collection and this listener
+// picks them up immediately.
+export function subscribeToProjects(
+  onChange: (projects: Project[]) => void,
+  onError: (err: unknown) => void,
+): Unsubscribe {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const projectsQuery = query(
+    collection(db, 'users', user.uid, 'projects'),
+    orderBy('name'),
+  );
+
+  return onSnapshot(
+    projectsQuery,
+    (snapshot) => onChange(snapshot.docs.map((doc) => doc.data() as Project)),
+    onError,
+  );
+}
+
+export async function createProject(name: string, color?: string | null): Promise<Project> {
+  const res = await apiFetch('/projects', {
+    method: 'POST',
+    body: JSON.stringify({ name, color }),
+  });
+  if (!res.ok) throw new Error(`createProject failed: ${res.status}`);
+  return res.json() as Promise<Project>;
+}
+
+export async function updateProject(
+  id: string,
+  updates: Partial<Pick<Project, 'name' | 'color'>>,
+): Promise<Project> {
+  const res = await apiFetch(`/projects/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`updateProject failed: ${res.status}`);
+  return res.json() as Promise<Project>;
+}
+
+export type ProjectDeleteMode = 'unassign' | 'cascade';
+
+export async function deleteProject(id: string, mode: ProjectDeleteMode): Promise<{ tasksAffected: number }> {
+  const res = await apiFetch(`/projects/${id}?onDelete=${mode}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`deleteProject failed: ${res.status}`);
+  return res.json() as Promise<{ deleted: true; tasksAffected: number }>;
 }
 
 export interface PromptResponse {

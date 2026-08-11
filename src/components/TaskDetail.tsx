@@ -12,8 +12,11 @@ import {
 } from '../api';
 import { DATE_TYPE_LABELS, formatDuration, withDateStamp } from '../taskDates';
 import { usePersistedState } from '../usePersistedState';
+import { useProjects } from '../useProjects';
+import { createProject } from '../api';
 import { ShoppingListSection } from './ShoppingListSection';
 import { TaskDateModal } from './TaskDateModal';
+import { ProjectModal } from './ProjectModal';
 import { BrainIcon } from '../icons';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -25,7 +28,7 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 interface TaskDetailProps {
   task: Task;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) => void;
+  onSave: (id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) => void;
   onDelete: (id: string) => void;
   onTasksChanged: () => void;
   isOnline: boolean;
@@ -49,6 +52,7 @@ interface TaskDraft {
   notes: string;
   dates: TaskDateEntry[];
   estimatedHoursInput: string;
+  projectId: string | null;
 }
 
 function draftKey(taskId: string): string {
@@ -101,6 +105,9 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
   const [estimatedHoursInput, setEstimatedHoursInput] = useState(
     draft?.estimatedHoursInput ?? (task.estimatedMinutes != null ? String(task.estimatedMinutes / 60) : ''),
   );
+  const [projectId, setProjectId] = useState<string | null>(draft?.projectId ?? task.projectId ?? null);
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const { projects, setProjects } = useProjects();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -131,20 +138,28 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
     || status !== task.status
     || notes !== (task.notes ?? '')
     || JSON.stringify(dates) !== JSON.stringify(task.dates ?? [])
-    || estimatedMinutes !== (task.estimatedMinutes ?? null);
+    || estimatedMinutes !== (task.estimatedMinutes ?? null)
+    || projectId !== (task.projectId ?? null);
 
   useEffect(() => {
     if (isDirty) {
-      saveDraft(task.id, { title, status, notes, dates, estimatedHoursInput });
+      saveDraft(task.id, { title, status, notes, dates, estimatedHoursInput, projectId });
     } else {
       clearDraft(task.id);
     }
-  }, [task.id, isDirty, title, status, notes, dates, estimatedHoursInput]);
+  }, [task.id, isDirty, title, status, notes, dates, estimatedHoursInput, projectId]);
 
   function handleSave() {
     clearDraft(task.id);
-    onSave(task.id, { title, status, notes: notes || null, dates, estimatedMinutes });
+    onSave(task.id, { title, status, notes: notes || null, dates, estimatedMinutes, projectId });
     setIsEditingNotes(false);
+  }
+
+  async function handleCreateProjectFromPicker(name: string, color: string | null) {
+    const project = await createProject(name, color);
+    setProjects((prev) => [...prev, { ...project, taskCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)));
+    setProjectId(project.id);
+    setIsNewProjectModalOpen(false);
   }
 
   function handleClose() {
@@ -288,6 +303,27 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
               {STATUS_LABELS[s]}
             </button>
           ))}
+        </div>
+
+        <div className="task-detail-project">
+          <span className="task-detail-project-label">Project</span>
+          <select
+            className="task-detail-project-select"
+            value={projectId ?? ''}
+            onChange={(e) => {
+              if (e.target.value === '__new__') {
+                setIsNewProjectModalOpen(true);
+                return;
+              }
+              setProjectId(e.target.value || null);
+            }}
+          >
+            <option value="">None</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+            <option value="__new__">+ New project…</option>
+          </select>
         </div>
 
         <div className="task-detail-dates">
@@ -508,6 +544,13 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
           onAdd={handleAddDateFromModal}
           estimatedHoursInput={estimatedHoursInput}
           onEstimateChange={persistEstimate}
+        />
+      )}
+
+      {isNewProjectModalOpen && (
+        <ProjectModal
+          onClose={() => setIsNewProjectModalOpen(false)}
+          onSave={handleCreateProjectFromPicker}
         />
       )}
     </div>

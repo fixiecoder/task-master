@@ -261,6 +261,15 @@
   line-height: 1.4;
 }
 
+.task-card-project-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 .task-card-date {
   font-size: 11px;
   letter-spacing: 0.02em;
@@ -393,6 +402,32 @@
 .status-pill.status-done.active { color: var(--pine); border-color: var(--pine); }
 
 /* ---- Task detail: dates & planned-work sessions ---- */
+
+.task-detail-project {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ink-dim);
+}
+
+.task-detail-project-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.task-detail-project-select {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--ink-dim);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--ink);
+  font-family: inherit;
+}
 
 .task-detail-dates {
   display: flex;

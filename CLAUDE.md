@@ -15,7 +15,7 @@ There are no tests.
 
 ## Architecture
 
-**task-master** is a React + TypeScript single-page app, currently just the SSO login gate and a landing page — no task management features yet.
+**task-master** is a React + TypeScript single-page app with task management, a shopping list, projects, calendar scheduling, and AI-assisted task creation/chat, backed by Firestore via `colinadams-api`.
 
 ### Auth (SSO Hub)
 
@@ -23,11 +23,19 @@ Authentication goes exclusively through the shared SSO Hub (`colinadams-auth`), 
 
 - `src/firebase.ts` — initialises the Firebase app client from `VITE_FIREBASE_*` env vars
 - `src/components/AuthGate.tsx` — wraps the app root in `main.tsx`; redirects to the Hub when signed out, exchanges `customToken` from the redirect URL via `signInWithCustomToken`
-- `src/App.tsx` — landing page shown once authenticated, with a sign-out button
+- `src/App.tsx` — routes to the board, calendar, shopping, projects, and settings views once authenticated
 
 ### Data
 
-No Firestore or `colinadams-api` REST integration yet. When task data is added, follow `circuit-visualiser/src/api.ts` as the reference pattern: authenticated `fetch` calls to `VITE_API_URL` with a Firebase ID token bearer header, rather than reading Firestore directly from the frontend.
+Writes go through `colinadams-api` REST routes (`src/api.ts`'s `apiFetch`, authenticated `fetch` calls to `VITE_API_URL` with a Firebase ID token bearer header), following `circuit-visualiser/src/api.ts`'s reference pattern. Reads for tasks/shopping items/projects sync live via direct Firestore `onSnapshot` listeners (`subscribeToTasks`, `subscribeToShoppingItems`, `subscribeToProjects` in `src/api.ts`) — writes always go through the REST API, but any change lands in Firestore and the listeners pick it up immediately across devices.
+
+Data models (`src/types.ts`):
+- **Task** — the core unit: title, status (`todo`/`in_progress`/`done`), notes, `dates` (start/due/planned-work/completed entries), `estimatedMinutes`, and `projectId` (optional FK to a Project).
+- **Project** — a lightweight grouping of tasks (name, optional accent `color`). A task belongs to at most one project. Deleting a project requires choosing `unassign` (tasks kept, `projectId` cleared) or `cascade` (tasks deleted too) — see `DELETE /projects/:id?onDelete=`.
+- **ShoppingItem** — belongs to a task (`taskId`), denormalizes `taskTitle`, has a category and purchased state.
+- **NotificationDoc**/**NotificationSettings** — morning-digest push notifications.
+
+Offline support: `src/db.ts` caches tasks and projects in IndexedDB; `src/useTasks.ts`/`src/useProjects.ts` fall back to the cache when offline and re-subscribe live when back online.
 
 ### Key Files
 
@@ -36,4 +44,11 @@ No Firestore or `colinadams-api` REST integration yet. When task data is added, 
 | `src/main.tsx` | Wraps `<App>` in `<AuthGate>` |
 | `src/components/AuthGate.tsx` | SSO custom-token exchange |
 | `src/firebase.ts` | Firebase app/auth client |
-| `src/App.tsx` | Landing page |
+| `src/App.tsx` | Routes: board, calendar, shopping, projects, settings |
+| `src/api.ts` | REST CRUD + Firestore live-sync for tasks/projects/shopping items |
+| `src/db.ts` | IndexedDB offline cache (tasks, projects) |
+| `src/useTasks.ts` / `src/useProjects.ts` | Data hooks: live subscription + offline fallback + optimistic updates |
+| `src/components/KanbanBoard.tsx` | Main board view; drag-and-drop between status columns |
+| `src/components/TaskDetail.tsx` | Task edit panel — status, dates, notes, project assignment, AI chat |
+| `src/components/ProjectsView.tsx` | Project list — create/rename/delete (with unassign-or-cascade prompt) |
+| `src/components/ShoppingView.tsx` | Aggregate shopping list across tasks |

@@ -125,7 +125,7 @@ export function ShoppingView() {
     );
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes'>>) {
+  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
     try {
       await saveTask(id, updates);
       setSelectedTaskId(null);
