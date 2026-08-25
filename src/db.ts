@@ -1,9 +1,11 @@
-import type { Project, Task } from './types';
+import type { Project, ShoppingItem, Task } from './types';
 
 const DB_NAME = 'task-master';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const TASKS_STORE = 'tasks';
 const PROJECTS_STORE = 'projects';
+const SHOPPING_STORE = 'shoppingItems';
+const OUTBOX_STORE = 'outbox';
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -15,6 +17,12 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(PROJECTS_STORE)) {
         db.createObjectStore(PROJECTS_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(SHOPPING_STORE)) {
+        db.createObjectStore(SHOPPING_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(OUTBOX_STORE)) {
+        db.createObjectStore(OUTBOX_STORE, { keyPath: 'key' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -126,4 +134,92 @@ export async function deleteCachedProject(id: string): Promise<void> {
     tx.onerror = () => reject(tx.error);
   });
   db.close();
+}
+
+export async function cacheShoppingItems(items: ShoppingItem[]): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(SHOPPING_STORE, 'readwrite');
+    const store = tx.objectStore(SHOPPING_STORE);
+    store.clear();
+    for (const item of items) store.put(item);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function cacheShoppingItem(item: ShoppingItem): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(SHOPPING_STORE, 'readwrite');
+    tx.objectStore(SHOPPING_STORE).put(item);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function getCachedShoppingItems(): Promise<ShoppingItem[]> {
+  const db = await openDB();
+  const items = await new Promise<ShoppingItem[]>((resolve, reject) => {
+    const tx = db.transaction(SHOPPING_STORE, 'readonly');
+    const req = tx.objectStore(SHOPPING_STORE).getAll();
+    req.onsuccess = () => resolve(req.result as ShoppingItem[]);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return items;
+}
+
+export async function deleteCachedShoppingItem(id: string): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(SHOPPING_STORE, 'readwrite');
+    tx.objectStore(SHOPPING_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export interface OutboxEntry {
+  key: string;
+  kind: string;
+  payload: unknown;
+  createdAt: number;
+}
+
+export async function putOutboxEntry(entry: OutboxEntry): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(OUTBOX_STORE, 'readwrite');
+    tx.objectStore(OUTBOX_STORE).put(entry);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function deleteOutboxEntry(key: string): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(OUTBOX_STORE, 'readwrite');
+    tx.objectStore(OUTBOX_STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function getOutboxEntries(): Promise<OutboxEntry[]> {
+  const db = await openDB();
+  const entries = await new Promise<OutboxEntry[]>((resolve, reject) => {
+    const tx = db.transaction(OUTBOX_STORE, 'readonly');
+    const req = tx.objectStore(OUTBOX_STORE).getAll();
+    req.onsuccess = () => resolve(req.result as OutboxEntry[]);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return entries;
 }

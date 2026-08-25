@@ -6,7 +6,7 @@ import {
   sendTaskChatMessage,
   listTaskConversations,
   getTaskConversation,
-  updateTask,
+  queueUpdateTask,
   type ChatMessage,
   type ConversationSummary,
 } from '../api';
@@ -178,32 +178,28 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
     else if (next === 'done') setDates((prev) => withDateStamp(prev, 'completed'));
   }
 
-  async function persistDates(next: TaskDateEntry[]) {
+  function persistDates(next: TaskDateEntry[]) {
     const previous = dates;
     setDates(next);
     setDateError(null);
-    try {
-      await updateTask(task.id, { dates: next });
-      onTasksChanged();
-    } catch {
+    queueUpdateTask(task, { dates: next }, () => {
       setDates(previous);
       setDateError("Couldn't save that date — try again.");
-    }
+    });
+    onTasksChanged();
   }
 
-  async function persistEstimate(hoursInput: string) {
+  function persistEstimate(hoursInput: string) {
     const previous = estimatedHoursInput;
     if (hoursInput === previous) return;
     const minutes = hoursInput.trim() === '' ? null : Math.round(Number(hoursInput) * 60);
     setEstimatedHoursInput(hoursInput);
     setDateError(null);
-    try {
-      await updateTask(task.id, { estimatedMinutes: minutes });
-      onTasksChanged();
-    } catch {
+    queueUpdateTask(task, { estimatedMinutes: minutes }, () => {
       setEstimatedHoursInput(previous);
       setDateError("Couldn't save that estimate — try again.");
-    }
+    });
+    onTasksChanged();
   }
 
   function handleAddDateFromModal(type: TaskDateType, date: string, durationMinutes: number | null) {
@@ -347,7 +343,6 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
                     type="button"
                     className="task-date-remove"
                     onClick={() => handleRemoveDate(d.id)}
-                    disabled={!isOnline}
                     aria-label="Remove date"
                   >
                     ×
@@ -367,14 +362,12 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
             type="button"
             className="task-date-add"
             onClick={() => setIsDateModalOpen(true)}
-            disabled={!isOnline}
-            title={!isOnline ? "Can't add dates while offline" : undefined}
           >
             + Add date
           </button>
         </div>
 
-        <ShoppingListSection taskId={task.id} isOnline={isOnline} />
+        <ShoppingListSection taskId={task.id} taskTitle={task.title} />
 
         <div className={`task-detail-notes ${isOnline && isChatOpen ? 'notes-collapsed' : ''}`}>
           <div className="task-detail-notes-header">
@@ -506,7 +499,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
               <button type="button" className="secondary" onClick={() => setIsConfirmingDelete(false)}>
                 Cancel
               </button>
-              <button type="button" className="danger" onClick={handleDeleteConfirmed} disabled={!isOnline}>
+              <button type="button" className="danger" onClick={handleDeleteConfirmed}>
                 Delete
               </button>
             </div>
@@ -515,8 +508,6 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
               type="button"
               className="link-button task-detail-delete"
               onClick={() => setIsConfirmingDelete(true)}
-              disabled={!isOnline}
-              title={!isOnline ? "Can't delete while offline" : undefined}
             >
               Delete task
             </button>
@@ -529,8 +520,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
               type="button"
               className="primary"
               onClick={handleSave}
-              disabled={!isDirty || !isOnline}
-              title={!isOnline ? "Can't save while offline" : undefined}
+              disabled={!isDirty}
             >
               Save
             </button>

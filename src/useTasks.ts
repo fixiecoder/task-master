@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Task } from './types';
-import { deleteTask, listTasks, subscribeToTasks, updateTask } from './api';
+import { listTasks, queueDeleteTask, queueUpdateTask, subscribeToTasks } from './api';
 import { useOnlineStatus } from './useOnlineStatus';
 
 export function useTasks() {
@@ -44,13 +44,15 @@ export function useTasks() {
     return unsubscribe;
   }, [isOnline, refresh]);
 
-  async function saveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
-    const updated = await updateTask(id, updates);
-    setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+  function saveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
+    const current = tasks.find((t) => t.id === id);
+    if (!current) return;
+    const optimistic = queueUpdateTask(current, updates, () => setError('Could not save that task — try again.'));
+    setTasks((prev) => prev.map((t) => (t.id === id ? optimistic : t)));
   }
 
-  async function removeTask(id: string) {
-    await deleteTask(id);
+  function removeTask(id: string) {
+    queueDeleteTask(id, () => setError('Could not delete that task — try again.'));
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 

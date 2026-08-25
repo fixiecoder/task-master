@@ -96,6 +96,10 @@ export const OtherIcon = icon('OtherIcon', (
   </>
 ));
 
+export const FilterIcon = icon('FilterIcon', (
+  <path d="M4 5h16l-6 7.5V19l-4 2v-8.5L4 5Z" />
+));
+
 export const BrainIcon = icon('BrainIcon', (
   <>
     <path d="M9.5 3.5a2.5 2.5 0 0 0-2.5 2.5v.2A2.8 2.8 0 0 0 5 8.8v.4a2.6 2.6 0 0 0-1 4.9 2.7 2.7 0 0 0 1.6 3.8A2.6 2.6 0 0 0 8 20.5a2.5 2.5 0 0 0 1.5-.5" />

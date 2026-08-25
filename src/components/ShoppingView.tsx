@@ -1,10 +1,10 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Timestamp } from 'firebase/firestore';
 import type { ShoppingCategory, ShoppingItem, Task } from '../types';
-import { CATEGORY_LABELS, CATEGORY_ORDER, subscribeToShoppingItems, togglePurchaseGroup } from '../api';
-import { syncWithRetry } from '../syncQueue';
+import { CATEGORY_LABELS, CATEGORY_ORDER, queueTogglePurchaseGroup } from '../api';
 import { useOptimisticShoppingItems } from '../useOptimisticShoppingItems';
+import { useShoppingItems } from '../useShoppingItems';
 import { useTasks } from '../useTasks';
 import { TaskDetail } from './TaskDetail';
 import './ShoppingListSection.css';
@@ -65,7 +65,7 @@ function isOldPurchase(group: ShoppingGroup): boolean {
 
 export function ShoppingView() {
   const { tasks, isOnline, refresh, saveTask, removeTask } = useTasks();
-  const [items, setItems] = useState<ShoppingItem[]>([]);
+  const { items, error: itemsError } = useShoppingItems();
   const [error, setError] = useState<string | null>(null);
   const [showOldPurchases, setShowOldPurchases] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,11 +92,6 @@ export function ShoppingView() {
     });
   }
 
-  useEffect(() => {
-    if (!isOnline) return;
-    return subscribeToShoppingItems(setItems, () => setError('Could not load shopping items.'));
-  }, [isOnline]);
-
   const { displayItems, setOverride, clearOverride } = useOptimisticShoppingItems(items);
 
   const { currentGroups, oldGroups } = useMemo(() => {
@@ -115,32 +110,20 @@ export function ShoppingView() {
     const next = !group.allPurchased;
     const ids = group.items.map((i) => i.id);
     setOverride(ids, next);
-    syncWithRetry(
-      `shopping-group:${group.normalizedName}`,
-      () => togglePurchaseGroup(group.normalizedName, next),
-      () => {
-        clearOverride(ids);
-        setError("Couldn't update that item — try again.");
-      },
-    );
+    queueTogglePurchaseGroup(group.normalizedName, ids, next, () => {
+      clearOverride(ids);
+      setError("Couldn't update that item — try again.");
+    });
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
-    try {
-      await saveTask(id, updates);
-      setSelectedTaskId(null);
-    } catch {
-      setError('Could not save that task — try again.');
-    }
+  function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
+    saveTask(id, updates);
+    setSelectedTaskId(null);
   }
 
-  async function handleDeleteTask(id: string) {
-    try {
-      await removeTask(id);
-      setSelectedTaskId(null);
-    } catch {
-      setError('Could not delete that task — try again.');
-    }
+  function handleDeleteTask(id: string) {
+    removeTask(id);
+    setSelectedTaskId(null);
   }
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
@@ -148,9 +131,9 @@ export function ShoppingView() {
   return (
     <div className="shopping-page">
       {!isOnline && (
-        <p className="board-offline">You're offline — the shopping list is unavailable.</p>
+        <p className="board-offline">You're offline — showing saved items.</p>
       )}
-      {error && <p className="board-error">{error}</p>}
+      {(error || itemsError) && <p className="board-error">{error ?? itemsError}</p>}
 
       <div className="shopping-page-header">
         <h2>Shopping</h2>

@@ -1,23 +1,22 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { ShoppingCategory, ShoppingItem } from '../types';
 import {
-  addShoppingItems,
   CATEGORY_LABELS,
   CATEGORY_ORDER,
-  deleteShoppingItem,
-  renameShoppingItem,
-  setShoppingItemCategory,
-  subscribeToShoppingItems,
-  toggleShoppingItemPurchased,
+  queueAddShoppingItems,
+  queueDeleteShoppingItem,
+  queueRenameShoppingItem,
+  queueSetShoppingItemCategory,
+  queueToggleShoppingItemPurchased,
 } from '../api';
-import { syncWithRetry } from '../syncQueue';
 import { useOptimisticShoppingItems } from '../useOptimisticShoppingItems';
+import { useShoppingItems } from '../useShoppingItems';
 import { usePersistedState } from '../usePersistedState';
 import './ShoppingListSection.css';
 
 interface ShoppingListSectionProps {
   taskId: string;
-  isOnline: boolean;
+  taskTitle: string;
 }
 
 interface ItemRowProps {
@@ -137,110 +136,73 @@ function EditCategoryModal({ item, onClose, onSelect }: EditCategoryModalProps) 
   );
 }
 
-export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionProps) {
-  const [items, setItems] = useState<ShoppingItem[]>([]);
+export function ShoppingListSection({ taskId, taskTitle }: ShoppingListSectionProps) {
+  const { items: allItems, error: loadError, setItems: setAllItems } = useShoppingItems();
+  const items = allItems.filter((item) => item.taskId === taskId);
   const [error, setError] = useState<string | null>(null);
   const [addText, setAddText] = usePersistedState(`task-master:shopping-add-draft:${taskId}`, '');
-  const [isAdding, setIsAdding] = useState(false);
   const [materialText, setMaterialText] = usePersistedState(`task-master:shopping-material-draft:${taskId}`, '');
-  const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [editingNameItem, setEditingNameItem] = useState<ShoppingItem | null>(null);
   const [editingCategoryItem, setEditingCategoryItem] = useState<ShoppingItem | null>(null);
-
-  useEffect(() => {
-    if (!isOnline) return;
-    return subscribeToShoppingItems(
-      (allItems) => setItems(allItems.filter((item) => item.taskId === taskId)),
-      () => setError('Could not load the shopping list.'),
-    );
-  }, [taskId, isOnline]);
 
   const { displayItems, setOverride, clearOverride } = useOptimisticShoppingItems(items);
   const shoppingListItems = displayItems.filter((item) => !item.purchased);
   const materials = displayItems.filter((item) => item.purchased);
 
-  async function handleAddSubmit(e: FormEvent) {
+  function handleAddSubmit(e: FormEvent) {
     e.preventDefault();
     const text = addText.trim();
-    if (!text || isAdding) return;
+    if (!text) return;
 
-    setIsAdding(true);
-    setError(null);
-    try {
-      await addShoppingItems(taskId, text);
-      setAddText('');
-    } catch {
+    const created = queueAddShoppingItems(taskId, taskTitle, text, false, () => {
       setError("Couldn't add that — try again.");
-    } finally {
-      setIsAdding(false);
-    }
+    });
+    setAllItems((prev) => [...created, ...prev]);
+    setAddText('');
   }
 
-  async function handleAddMaterialSubmit(e: FormEvent) {
+  function handleAddMaterialSubmit(e: FormEvent) {
     e.preventDefault();
     const text = materialText.trim();
-    if (!text || isAddingMaterial) return;
+    if (!text) return;
 
-    setIsAddingMaterial(true);
-    setError(null);
-    try {
-      await addShoppingItems(taskId, text, true);
-      setMaterialText('');
-    } catch {
+    const created = queueAddShoppingItems(taskId, taskTitle, text, true, () => {
       setError("Couldn't add that — try again.");
-    } finally {
-      setIsAddingMaterial(false);
-    }
+    });
+    setAllItems((prev) => [...created, ...prev]);
+    setMaterialText('');
   }
 
   function handleTogglePurchased(item: ShoppingItem) {
     const next = !item.purchased;
     setOverride([item.id], next);
-    syncWithRetry(
-      `shopping-item:${item.id}`,
-      async () => { await toggleShoppingItemPurchased(item.id, next); },
-      () => {
-        clearOverride([item.id]);
-        setError("Couldn't update that item — try again.");
-      },
-    );
+    queueToggleShoppingItemPurchased(item, next, () => {
+      clearOverride([item.id]);
+      setError("Couldn't update that item — try again.");
+    });
   }
 
-  async function handleSetCategory(item: ShoppingItem, category: ShoppingCategory) {
-    try {
-      await setShoppingItemCategory(item.id, category);
-      setEditingCategoryItem(null);
-    } catch {
+  function handleSetCategory(item: ShoppingItem, category: ShoppingCategory) {
+    const updated = queueSetShoppingItemCategory(item, category, () => {
       setError("Couldn't set that category — try again.");
-    }
+    });
+    setAllItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    setEditingCategoryItem(null);
   }
 
-  async function handleRename(item: ShoppingItem, name: string) {
-    try {
-      await renameShoppingItem(item.id, name);
-      setEditingNameItem(null);
-    } catch {
+  function handleRename(item: ShoppingItem, name: string) {
+    const updated = queueRenameShoppingItem(item, name, () => {
       setError("Couldn't rename that item — try again.");
-    }
+    });
+    setAllItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    setEditingNameItem(null);
   }
 
-  async function handleDelete(item: ShoppingItem) {
-    try {
-      await deleteShoppingItem(item.id);
-    } catch {
+  function handleDelete(item: ShoppingItem) {
+    queueDeleteShoppingItem(item.id, () => {
       setError("Couldn't delete that item — try again.");
-    }
-  }
-
-  if (!isOnline) {
-    return (
-      <div className="shopping-list-section">
-        <div className="shopping-list-header">
-          <span>Shopping list</span>
-        </div>
-        <p className="shopping-list-offline">Shopping list is unavailable while offline.</p>
-      </div>
-    );
+    });
+    setAllItems((prev) => prev.filter((i) => i.id !== item.id));
   }
 
   return (
@@ -250,7 +212,7 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
           <span>Shopping list</span>
         </div>
 
-        {error && <p className="shopping-list-error">{error}</p>}
+        {(error || loadError) && <p className="shopping-list-error">{error ?? loadError}</p>}
 
         {shoppingListItems.length === 0 ? (
           <p className="shopping-list-empty">No items yet.</p>
@@ -276,10 +238,9 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
             value={addText}
             onChange={(e) => setAddText(e.target.value)}
             placeholder="Add item(s)… e.g. milk, batteries, a screwdriver"
-            disabled={isAdding}
           />
-          <button type="submit" disabled={isAdding || !addText.trim()}>
-            {isAdding ? 'Adding…' : 'Add'}
+          <button type="submit" disabled={!addText.trim()}>
+            Add
           </button>
         </form>
       </div>
@@ -311,10 +272,9 @@ export function ShoppingListSection({ taskId, isOnline }: ShoppingListSectionPro
               value={materialText}
               onChange={(e) => setMaterialText(e.target.value)}
               placeholder="Add material(s) you already have… e.g. a hammer, spare screws"
-              disabled={isAddingMaterial}
             />
-            <button type="submit" disabled={isAddingMaterial || !materialText.trim()}>
-              {isAddingMaterial ? 'Adding…' : 'Add'}
+            <button type="submit" disabled={!materialText.trim()}>
+              Add
             </button>
           </form>
         </div>

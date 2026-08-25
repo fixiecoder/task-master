@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Task, TaskDateEntry } from '../types';
 import { useTasks } from '../useTasks';
-import { createTask, updateTask } from '../api';
+import { queueCreateTask, queueUpdateTask } from '../api';
 import { buildMonthGrid, buildWeekGrid, toDateKey, todayKey } from '../taskDates';
 import { TaskDetail } from './TaskDetail';
 import { DayDetailModal } from './DayDetailModal';
@@ -138,62 +138,54 @@ export function CalendarPage() {
     updateParams({ month: monthKey, week: toDateKey(now) });
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
-    try {
-      await saveTask(id, updates);
-      setSelectedTaskId(null);
-    } catch {
-      // TaskDetail stays open so the user can retry the save.
-    }
+  function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
+    saveTask(id, updates);
+    setSelectedTaskId(null);
   }
 
-  async function handleDeleteTask(id: string) {
-    try {
-      await removeTask(id);
-      setSelectedTaskId(null);
-    } catch {
-      // TaskDetail stays open so the user can retry the delete.
-    }
+  function handleDeleteTask(id: string) {
+    removeTask(id);
+    setSelectedTaskId(null);
   }
 
-  async function handleQuickAddTask(title: string) {
+  function handleQuickAddTask(title: string) {
     if (!selectedDayKey) return;
-    try {
-      const created = await createTask(title);
-      const startEntry: TaskDateEntry = {
-        id: crypto.randomUUID(),
-        type: 'start',
-        date: selectedDayKey,
-        durationMinutes: null,
-      };
-      const withDate = await updateTask(created.id, { dates: [startEntry] });
-      setTasks((prev) => [withDate, ...prev]);
-      setIsQuickAddOpen(false);
-    } catch {
-      setError('Could not create that task — try again.');
-    }
+    const startEntry: TaskDateEntry = {
+      id: crypto.randomUUID(),
+      type: 'start',
+      date: selectedDayKey,
+      durationMinutes: null,
+    };
+    const created = queueCreateTask(
+      title,
+      null,
+      null,
+      () => setError('Could not create that task — try again.'),
+      { dates: [startEntry] },
+    );
+    setTasks((prev) => [created, ...prev]);
+    setIsQuickAddOpen(false);
   }
 
-  async function handleAssignExistingTask(taskId: string) {
+  function handleAssignExistingTask(taskId: string) {
     if (!selectedDayKey) return;
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
-    try {
-      const startEntry: TaskDateEntry = {
-        id: crypto.randomUUID(),
-        type: 'start',
-        date: selectedDayKey,
-        durationMinutes: null,
-      };
-      const updated = await updateTask(taskId, { dates: [...task.dates, startEntry] });
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-      setIsAssignPickerOpen(false);
-    } catch {
+    const startEntry: TaskDateEntry = {
+      id: crypto.randomUUID(),
+      type: 'start',
+      date: selectedDayKey,
+      durationMinutes: null,
+    };
+    const updated = queueUpdateTask(task, { dates: [...task.dates, startEntry] }, () => {
       setError('Could not assign that task — try again.');
-    }
+      refresh();
+    });
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+    setIsAssignPickerOpen(false);
   }
 
-  async function handleDropOnDay(dateKey: string) {
+  function handleDropOnDay(dateKey: string) {
     const entry = draggedEntry;
     setDraggedEntry(null);
     setDragOverDayKey(null);
@@ -207,24 +199,20 @@ export function CalendarPage() {
       .map((d) => (d.id === entry.id ? { ...d, date: dateKey } : d))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, dates: nextDates } : t)));
-    try {
-      await updateTask(task.id, { dates: nextDates });
-    } catch {
+    const updated = queueUpdateTask(task, { dates: nextDates }, () => {
       setError('Could not reschedule that task — try again.');
       refresh();
-    }
+    });
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   }
 
-  async function handleUnscheduleEntry(task: Task, entry: TaskDateEntry) {
+  function handleUnscheduleEntry(task: Task, entry: TaskDateEntry) {
     const nextDates = task.dates.filter((d) => d.id !== entry.id);
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, dates: nextDates } : t)));
-    try {
-      await updateTask(task.id, { dates: nextDates });
-    } catch {
+    const updated = queueUpdateTask(task, { dates: nextDates }, () => {
       setError('Could not unschedule that task — try again.');
       refresh();
-    }
+    });
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   }
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;

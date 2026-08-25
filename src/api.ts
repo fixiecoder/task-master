@@ -2,7 +2,20 @@ import { getIdToken } from 'firebase/auth';
 import { collection, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import type { Project, ProjectWithCount, ShoppingCategory, ShoppingItem, Task, TaskStatus } from './types';
-import { cacheTask, cacheTasks, deleteCachedTask, getCachedTask, getCachedTasks, cacheProjects, getCachedProjects } from './db';
+import {
+  cacheTask,
+  cacheTasks,
+  deleteCachedTask,
+  getCachedTask,
+  getCachedTasks,
+  cacheProjects,
+  getCachedProjects,
+  cacheShoppingItem,
+  cacheShoppingItems,
+  getCachedShoppingItems,
+  deleteCachedShoppingItem,
+} from './db';
+import { syncWithRetry } from './syncQueue';
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -113,6 +126,80 @@ export async function deleteTask(id: string): Promise<void> {
   const res = await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`deleteTask failed: ${res.status}`);
   await deleteCachedTask(id);
+}
+
+// Below: "queued" mutation wrappers. Each applies its change to the local
+// cache immediately (so it survives a reload while offline) and hands the
+// actual network call to syncWithRetry, which retries with backoff and
+// persists the pending mutation to the outbox until it lands — see
+// src/syncQueue.ts and src/outbox.ts (the latter re-drives these same
+// mutations at startup for anything still pending from a prior session).
+
+// Creates a task optimistically under a client-generated id so it can be
+// cached and rendered immediately, then queues the real create. Once the
+// real create lands, the temp record is dropped from the cache — the live
+// Firestore listener (or the next offline refresh) supplies the real one.
+// `initialUpdates` covers callers that create a task and immediately give it
+// dates in the same gesture (e.g. dropping a new task on a calendar day):
+// since the temp id doesn't exist server-side, that follow-up update can't
+// be queued separately (it would 404 once replayed) — it's folded into the
+// same outbox entry and applied to the real id right after create succeeds.
+export function queueCreateTask(
+  title: string,
+  notes: string | null,
+  projectId: string | null,
+  onGiveUp: () => void,
+  initialUpdates?: Partial<Pick<Task, 'dates' | 'status'>>,
+): Task {
+  const tempId = `temp-${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  const optimistic: Task = {
+    id: tempId,
+    title,
+    status: initialUpdates?.status ?? 'todo',
+    notes,
+    dates: initialUpdates?.dates ?? [],
+    estimatedMinutes: null,
+    projectId,
+    source: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  cacheTask(optimistic).catch(() => {});
+  syncWithRetry(
+    { key: `task-create:${tempId}`, kind: 'createTask', payload: { tempId, title, notes, projectId, initialUpdates } },
+    async () => {
+      const real = await createTask(title, notes ?? undefined, projectId);
+      if (initialUpdates) await updateTask(real.id, initialUpdates);
+      await deleteCachedTask(tempId);
+    },
+    onGiveUp,
+  );
+  return optimistic;
+}
+
+export function queueUpdateTask(
+  current: Task,
+  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>,
+  onGiveUp: () => void,
+): Task {
+  const optimistic: Task = { ...current, ...updates };
+  cacheTask(optimistic).catch(() => {});
+  syncWithRetry(
+    { key: `task:${current.id}`, kind: 'updateTask', payload: { id: current.id, updates } },
+    () => updateTask(current.id, updates).then(() => {}),
+    onGiveUp,
+  );
+  return optimistic;
+}
+
+export function queueDeleteTask(id: string, onGiveUp: () => void): void {
+  deleteCachedTask(id).catch(() => {});
+  syncWithRetry(
+    { key: `task-delete:${id}`, kind: 'deleteTask', payload: { id } },
+    () => deleteTask(id).then(() => {}),
+    onGiveUp,
+  );
 }
 
 export async function listProjects(): Promise<ProjectWithCount[]> {
@@ -288,17 +375,31 @@ export const CATEGORY_LABELS: Record<ShoppingCategory, string> = {
 };
 
 export async function listShoppingItems(taskId?: string): Promise<ShoppingItem[]> {
-  const path = taskId ? `/shopping-items?taskId=${encodeURIComponent(taskId)}` : '/shopping-items';
-  const res = await apiFetch(path);
-  if (!res.ok) throw new Error(`listShoppingItems failed: ${res.status}`);
-  const data = await res.json() as { items: ShoppingItem[] };
-  return data.items;
+  if (!navigator.onLine) {
+    const cached = await getCachedShoppingItems();
+    return taskId ? cached.filter((i) => i.taskId === taskId) : cached;
+  }
+
+  try {
+    const path = taskId ? `/shopping-items?taskId=${encodeURIComponent(taskId)}` : '/shopping-items';
+    const res = await apiFetch(path);
+    if (!res.ok) throw new Error(`listShoppingItems failed: ${res.status}`);
+    const data = await res.json() as { items: ShoppingItem[] };
+    if (!taskId) await cacheShoppingItems(data.items);
+    return data.items;
+  } catch (err) {
+    const cached = await getCachedShoppingItems();
+    const filtered = taskId ? cached.filter((i) => i.taskId === taskId) : cached;
+    if (filtered.length > 0) return filtered;
+    throw err;
+  }
 }
 
 // Live-syncs the signed-in user's shopping items, same pattern as
 // subscribeToTasks: REST writes land in this collection and this listener
 // picks them up immediately, across the aggregate Shopping view and any
-// open task's list.
+// open task's list. Every snapshot is also written through to the local
+// cache so the list survives a reload while offline.
 export function subscribeToShoppingItems(
   onChange: (items: ShoppingItem[]) => void,
   onError: (err: unknown) => void,
@@ -313,7 +414,11 @@ export function subscribeToShoppingItems(
 
   return onSnapshot(
     itemsQuery,
-    (snapshot) => onChange(snapshot.docs.map((doc) => doc.data() as ShoppingItem)),
+    (snapshot) => {
+      const items = snapshot.docs.map((doc) => doc.data() as ShoppingItem);
+      cacheShoppingItems(items);
+      onChange(items);
+    },
     onError,
   );
 }
@@ -328,6 +433,7 @@ export async function addShoppingItems(taskId: string, text: string, purchased =
   });
   if (!res.ok) throw new Error(`addShoppingItems failed: ${res.status}`);
   const data = await res.json() as { items: ShoppingItem[] };
+  for (const item of data.items) await cacheShoppingItem(item);
   return data.items;
 }
 
@@ -337,7 +443,9 @@ export async function setShoppingItemCategory(id: string, category: ShoppingCate
     body: JSON.stringify({ category }),
   });
   if (!res.ok) throw new Error(`setShoppingItemCategory failed: ${res.status}`);
-  return res.json() as Promise<ShoppingItem>;
+  const item = await res.json() as ShoppingItem;
+  await cacheShoppingItem(item);
+  return item;
 }
 
 export async function renameShoppingItem(id: string, name: string): Promise<ShoppingItem> {
@@ -346,7 +454,9 @@ export async function renameShoppingItem(id: string, name: string): Promise<Shop
     body: JSON.stringify({ name }),
   });
   if (!res.ok) throw new Error(`renameShoppingItem failed: ${res.status}`);
-  return res.json() as Promise<ShoppingItem>;
+  const item = await res.json() as ShoppingItem;
+  await cacheShoppingItem(item);
+  return item;
 }
 
 export async function toggleShoppingItemPurchased(id: string, purchased: boolean): Promise<ShoppingItem> {
@@ -355,7 +465,9 @@ export async function toggleShoppingItemPurchased(id: string, purchased: boolean
     body: JSON.stringify({ purchased }),
   });
   if (!res.ok) throw new Error(`toggleShoppingItemPurchased failed: ${res.status}`);
-  return res.json() as Promise<ShoppingItem>;
+  const item = await res.json() as ShoppingItem;
+  await cacheShoppingItem(item);
+  return item;
 }
 
 // Marks every item sharing a normalized name as purchased/unpurchased, so
@@ -367,9 +479,103 @@ export async function togglePurchaseGroup(normalizedName: string, purchased: boo
     body: JSON.stringify({ normalizedName, purchased }),
   });
   if (!res.ok) throw new Error(`togglePurchaseGroup failed: ${res.status}`);
+  const cached = await getCachedShoppingItems();
+  for (const item of cached) {
+    if (item.normalizedName === normalizedName) await cacheShoppingItem({ ...item, purchased });
+  }
 }
 
 export async function deleteShoppingItem(id: string): Promise<void> {
   const res = await apiFetch(`/shopping-items/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`deleteShoppingItem failed: ${res.status}`);
+  await deleteCachedShoppingItem(id);
+}
+
+// Queued mutation wrappers — see the note above queueCreateTask. Each
+// applies its change to the cache immediately and hands the network call to
+// syncWithRetry so it survives bad/no signal and a reload while pending.
+
+export function queueToggleShoppingItemPurchased(item: ShoppingItem, purchased: boolean, onGiveUp: () => void): void {
+  cacheShoppingItem({ ...item, purchased }).catch(() => {});
+  syncWithRetry(
+    { key: `shopping-item:${item.id}`, kind: 'toggleShoppingItem', payload: { id: item.id, purchased } },
+    () => toggleShoppingItemPurchased(item.id, purchased).then(() => {}),
+    onGiveUp,
+  );
+}
+
+export function queueTogglePurchaseGroup(normalizedName: string, itemIds: string[], purchased: boolean, onGiveUp: () => void): void {
+  getCachedShoppingItems().then((cached) => {
+    for (const item of cached) {
+      if (itemIds.includes(item.id)) cacheShoppingItem({ ...item, purchased });
+    }
+  }).catch(() => {});
+  syncWithRetry(
+    { key: `shopping-group:${normalizedName}`, kind: 'togglePurchaseGroup', payload: { normalizedName, purchased } },
+    () => togglePurchaseGroup(normalizedName, purchased),
+    onGiveUp,
+  );
+}
+
+// Adds item(s) optimistically under client-generated ids, same temp-id
+// pattern as queueCreateTask.
+export function queueAddShoppingItems(taskId: string, taskTitle: string, text: string, purchased: boolean, onGiveUp: () => void): ShoppingItem[] {
+  const now = new Date().toISOString();
+  const names = text.split(',').map((s) => s.trim()).filter(Boolean);
+  const optimisticItems: ShoppingItem[] = names.map((name) => ({
+    id: `temp-${crypto.randomUUID()}`,
+    taskId,
+    taskTitle,
+    name,
+    normalizedName: name.toLowerCase(),
+    category: null,
+    purchased,
+    purchasedAt: purchased ? now : null,
+    archived: false,
+    source: 'manual',
+    createdAt: now,
+    updatedAt: now,
+  }));
+  for (const item of optimisticItems) cacheShoppingItem(item).catch(() => {});
+  const tempIds = optimisticItems.map((i) => i.id);
+  syncWithRetry(
+    { key: `shopping-add:${tempIds.join(',')}`, kind: 'addShoppingItems', payload: { tempIds, taskId, text, purchased } },
+    async () => {
+      await addShoppingItems(taskId, text, purchased);
+      for (const tempId of tempIds) await deleteCachedShoppingItem(tempId);
+    },
+    onGiveUp,
+  );
+  return optimisticItems;
+}
+
+export function queueRenameShoppingItem(item: ShoppingItem, name: string, onGiveUp: () => void): ShoppingItem {
+  const optimistic: ShoppingItem = { ...item, name, normalizedName: name.toLowerCase() };
+  cacheShoppingItem(optimistic).catch(() => {});
+  syncWithRetry(
+    { key: `shopping-rename:${item.id}`, kind: 'renameShoppingItem', payload: { id: item.id, name } },
+    () => renameShoppingItem(item.id, name).then(() => {}),
+    onGiveUp,
+  );
+  return optimistic;
+}
+
+export function queueSetShoppingItemCategory(item: ShoppingItem, category: ShoppingCategory, onGiveUp: () => void): ShoppingItem {
+  const optimistic: ShoppingItem = { ...item, category };
+  cacheShoppingItem(optimistic).catch(() => {});
+  syncWithRetry(
+    { key: `shopping-category:${item.id}`, kind: 'setShoppingItemCategory', payload: { id: item.id, category } },
+    () => setShoppingItemCategory(item.id, category).then(() => {}),
+    onGiveUp,
+  );
+  return optimistic;
+}
+
+export function queueDeleteShoppingItem(id: string, onGiveUp: () => void): void {
+  deleteCachedShoppingItem(id).catch(() => {});
+  syncWithRetry(
+    { key: `shopping-delete:${id}`, kind: 'deleteShoppingItem', payload: { id } },
+    () => deleteShoppingItem(id).then(() => {}),
+    onGiveUp,
+  );
 }

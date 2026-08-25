@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Task } from '../types';
-import { createTask, updateTask } from '../api';
+import { queueCreateTask, queueUpdateTask } from '../api';
 import { useTasks } from '../useTasks';
 import { useProjects } from '../useProjects';
 import { KanbanColumn, type ColumnId } from './KanbanColumn';
 import { TaskDetail } from './TaskDetail';
 import { StartDatePromptModal } from './StartDatePromptModal';
+import { ProjectFilter, UNASSIGNED_PROJECT_FILTER } from './ProjectFilter';
 import { withDateStamp } from '../taskDates';
 import './Board.css';
 
@@ -40,18 +41,42 @@ export function KanbanBoard() {
       return next;
     });
   }
+
+  // Empty set = no filter applied (show every task).
+  const projectFilter = useMemo(() => new Set(searchParams.getAll('project')), [searchParams]);
+  function toggleProjectFilter(id: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      const current = new Set(next.getAll('project'));
+      if (current.has(id)) current.delete(id);
+      else current.add(id);
+      next.delete('project');
+      for (const projectId of current) next.append('project', projectId);
+      return next;
+    });
+  }
+  function setProjectFilter(ids: string[]) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('project');
+      for (const projectId of ids) next.append('project', projectId);
+      return next;
+    });
+  }
+  const visibleTasks = useMemo(() => {
+    if (projectFilter.size === 0) return tasks;
+    return tasks.filter((t) => projectFilter.has(t.projectId ?? UNASSIGNED_PROJECT_FILTER));
+  }, [tasks, projectFilter]);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [touchDragOverColumn, setTouchDragOverColumn] = useState<ColumnId | null>(null);
   const [startDatePromptTaskId, setStartDatePromptTaskId] = useState<string | null>(null);
 
-  async function applyDrop(task: Task, updates: Partial<Pick<Task, 'status' | 'dates'>>) {
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...updates } : t)));
-    try {
-      await updateTask(task.id, updates);
-    } catch {
+  function applyDrop(task: Task, updates: Partial<Pick<Task, 'status' | 'dates'>>) {
+    const optimistic = queueUpdateTask(task, updates, () => {
       setError('Could not move that task — try again.');
       refresh();
-    }
+    });
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? optimistic : t)));
   }
 
   function handleDrop(columnId: ColumnId) {
@@ -79,40 +104,28 @@ export function KanbanBoard() {
     applyDrop(task, updates);
   }
 
-  async function handleConfirmStartDate(date: string) {
+  function handleConfirmStartDate(date: string) {
     const task = tasks.find((t) => t.id === startDatePromptTaskId);
     setStartDatePromptTaskId(null);
     if (!task) return;
 
     const dates = [...(task.dates ?? []), { id: crypto.randomUUID(), type: 'start' as const, date, durationMinutes: null }];
-    await applyDrop(task, { status: 'todo', dates });
+    applyDrop(task, { status: 'todo', dates });
   }
 
-  async function handleQuickAdd(title: string) {
-    try {
-      const task = await createTask(title);
-      setTasks((prev) => [task, ...prev]);
-    } catch {
-      setError('Could not create that task — try again.');
-    }
+  function handleQuickAdd(title: string) {
+    const task = queueCreateTask(title, null, null, () => setError('Could not create that task — try again.'));
+    setTasks((prev) => [task, ...prev]);
   }
 
-  async function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
-    try {
-      await saveTask(id, updates);
-      setSelectedTaskId(null);
-    } catch {
-      setError('Could not save that task — try again.');
-    }
+  function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
+    saveTask(id, updates);
+    setSelectedTaskId(null);
   }
 
-  async function handleDeleteTask(id: string) {
-    try {
-      await removeTask(id);
-      setSelectedTaskId(null);
-    } catch {
-      setError('Could not delete that task — try again.');
-    }
+  function handleDeleteTask(id: string) {
+    removeTask(id);
+    setSelectedTaskId(null);
   }
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
@@ -125,6 +138,15 @@ export function KanbanBoard() {
       )}
       {error && <p className="board-error">{error}</p>}
 
+      {projects.length > 0 && (
+        <ProjectFilter
+          projects={projects}
+          selected={projectFilter}
+          onToggle={toggleProjectFilter}
+          onSetAll={setProjectFilter}
+        />
+      )}
+
       {isLoading ? (
         <p className="board-loading">Loading tasks…</p>
       ) : (
@@ -134,7 +156,7 @@ export function KanbanBoard() {
               key={id}
               id={id}
               label={label}
-              tasks={tasks.filter((t) => columnFor(t) === id)}
+              tasks={visibleTasks.filter((t) => columnFor(t) === id)}
               projectsById={projectsById}
               onOpenTask={(task) => setSelectedTaskId(task.id)}
               onDragStart={(task) => setDraggedTaskId(task.id)}
