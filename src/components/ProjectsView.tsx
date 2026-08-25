@@ -26,7 +26,12 @@ export function ProjectsView() {
   async function handleAdd(name: string, color: string | null) {
     try {
       const project = await createProject(name, color);
-      setProjects((prev) => [...prev, { ...project, taskCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)));
+      setProjects((prev) => {
+        // The live Firestore listener may have already delivered this
+        // project by the time createProject resolves — avoid double-adding.
+        if (prev.some((p) => p.id === project.id)) return prev;
+        return [...prev, { ...project, taskCount: 0 }].sort((a, b) => a.name.localeCompare(b.name));
+      });
       setIsAdding(false);
     } catch {
       setError('Could not create that project — try again.');
