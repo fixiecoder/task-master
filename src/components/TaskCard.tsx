@@ -4,6 +4,15 @@ import { ProgressBar } from './ProgressBar';
 import type { ColumnId } from './KanbanColumn';
 import { DATE_TYPE_LABELS, formatShortDate, primaryDisplayDate } from '../taskDates';
 
+// Display label + deep link for cross-app task sources. Only video-planner
+// hands off tasks today; extend this map as other spoke apps do the same.
+const SOURCE_APP_LABELS: Record<string, { label: string; url: (scriptId: string) => string }> = {
+  'video-planner': {
+    label: 'Video Planner',
+    url: (scriptId) => `https://video-planner.colinadams.co/project/${scriptId}`,
+  },
+};
+
 interface TaskCardProps {
   task: Task;
   project?: Project;
@@ -92,6 +101,7 @@ export function TaskCard({ task, project, onOpen, onDragStart, onTouchDrop, onTo
   }, [task, onDragStart, onTouchDrop, onTouchHover]);
 
   const dateEntry = primaryDisplayDate(task.dates);
+  const sourceApp = task.source && SOURCE_APP_LABELS[task.source.app];
 
   return (
     <button
@@ -117,6 +127,18 @@ export function TaskCard({ task, project, onOpen, onDragStart, onTouchDrop, onTo
           <span className="task-card-date" title={DATE_TYPE_LABELS[dateEntry.type]}>
             {DATE_TYPE_LABELS[dateEntry.type]} {formatShortDate(dateEntry.date)}
           </span>
+        )}
+        {sourceApp && task.source && (
+          <a
+            className="task-card-source-badge"
+            href={sourceApp.url(task.source.scriptId)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`Open in ${sourceApp.label}`}
+          >
+            From {sourceApp.label}
+          </a>
         )}
         <ProgressBar task={task} />
       </span>

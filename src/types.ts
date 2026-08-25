@@ -9,6 +9,14 @@ export interface TaskDateEntry {
   durationMinutes: number | null; // only meaningful for planned_work
 }
 
+/** Where a task originated, when it was created by another spoke app rather than task-master itself. */
+export interface TaskSource {
+  app: string; // e.g. 'video-planner'
+  scriptId: string;
+  versionId: string;
+  shotBlockId: string | null; // null = script-level task
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -17,6 +25,7 @@ export interface Task {
   dates: TaskDateEntry[];
   estimatedMinutes: number | null;
   projectId: string | null;
+  source: TaskSource | null;
   createdAt: unknown;
   updatedAt: unknown;
 }

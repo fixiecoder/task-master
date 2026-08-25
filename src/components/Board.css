@@ -277,6 +277,13 @@
   color: var(--ink-dim);
 }
 
+.task-card-source-badge {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
 .task-card-notes-dot {
   flex-shrink: 0;
   margin-top: 5px;
