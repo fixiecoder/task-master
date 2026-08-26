@@ -317,6 +317,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
           </button>
         </header>
 
+        <div className="task-detail-body">
         <div className="task-detail-status">
           {TASK_STATUSES.map((s) => (
             <button
@@ -546,6 +547,7 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
         ) : (
           <p className="task-chat-offline">Ask AI is unavailable while offline.</p>
         )}
+        </div>
 
         <footer className="task-detail-footer">
           {isConfirmingDelete ? (

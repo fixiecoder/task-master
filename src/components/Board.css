@@ -510,7 +510,7 @@
   background: var(--scrim);
   display: flex;
   justify-content: flex-end;
-  z-index: 10;
+  z-index: 20;
 }
 
 .task-detail {
@@ -525,6 +525,15 @@
   gap: 18px;
   overflow: hidden;
   box-shadow: -12px 0 32px rgba(var(--shadow-rgb), 0.35);
+}
+
+.task-detail-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
 }
 
 .task-detail::before {
