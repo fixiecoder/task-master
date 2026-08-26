@@ -11,7 +11,7 @@ self.skipWaiting();
 clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Lets a client-side route (e.g. /shopping, restored from a bookmark or the
+// Lets a client-side route (e.g. /lists, restored from a bookmark or the
 // OS app switcher) resolve to the cached app shell when there's no network
 // to reach the server for that path — reads/writes still go through
 // IndexedDB/the API as usual once the SPA has booted. Excludes anything

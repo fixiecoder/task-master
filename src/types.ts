@@ -25,6 +25,7 @@ export interface Task {
   dates: TaskDateEntry[];
   estimatedMinutes: number | null;
   projectId: string | null;
+  listId: string | null;
   source: TaskSource | null;
   createdAt: unknown;
   updatedAt: unknown;
@@ -42,15 +43,29 @@ export type ProjectWithCount = Project & { taskCount: number };
 
 export type ShoppingCategory = 'groceries' | 'diy' | 'electronics' | 'other';
 
-export interface ShoppingItem {
+export type ListType = 'shopping' | 'todo' | 'checklist' | 'stock';
+
+export interface List {
   id: string;
-  taskId: string;
-  taskTitle: string;
+  name: string;
+  type: ListType;
+  // Symmetric link between a `shopping` list and its auto-created `stock`
+  // list. Null for todo/checklist lists, which never pair.
+  pairedListId: string | null;
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export type ListWithItemCount = List & { itemCount: number };
+
+export interface ListItem {
+  id: string;
+  listId: string;
   name: string;
   normalizedName: string;
-  category: ShoppingCategory | null;
-  purchased: boolean;
-  purchasedAt: unknown;
+  category: ShoppingCategory | null; // only meaningful for shopping/stock lists
+  checked: boolean; // todo/checklist "done" state; shopping/stock state is which list it's in
+  checkedAt: unknown;
   archived: boolean;
   source: 'ai' | 'manual';
   createdAt: unknown;

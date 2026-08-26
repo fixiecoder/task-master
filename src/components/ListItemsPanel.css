@@ -1,4 +1,4 @@
-.shopping-list-section {
+.list-items-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -8,7 +8,7 @@
   padding: 14px 0;
 }
 
-.shopping-list-header {
+.list-items-header {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -16,7 +16,7 @@
   color: var(--ink-dim);
 }
 
-.shopping-checkbox {
+.list-item-checkbox {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
@@ -25,42 +25,41 @@
 }
 
 @media (max-width: 600px) {
-  .shopping-checkbox {
+  .list-item-checkbox {
     width: 26px;
     height: 26px;
   }
 }
 
-.materials-section {
+.stock-section {
   border-top: none;
   padding-top: 0;
 }
 
-.materials-hint {
+.stock-hint {
   color: var(--ink-dim);
   font-size: 12px;
   margin: -2px 0 2px;
 }
 
-.shopping-list-empty,
-.shopping-list-offline {
+.list-items-empty {
   color: var(--ink-dim);
   font-size: 13px;
 }
 
-.shopping-list-error {
+.list-items-error {
   color: var(--danger);
   font-size: 13px;
 }
 
-.shopping-item-list {
+.list-item-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
   list-style: none;
 }
 
-.shopping-item {
+.list-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -69,18 +68,18 @@
 }
 
 @media (max-width: 600px) {
-  .shopping-item {
+  .list-item {
     font-size: 15px;
     gap: 12px;
   }
 }
 
-.shopping-item.purchased .shopping-item-name {
+.list-item.checked .list-item-name {
   color: var(--ink-dim);
   text-decoration: line-through;
 }
 
-.shopping-item-name {
+.list-item-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -88,7 +87,7 @@
   white-space: nowrap;
 }
 
-.shopping-item-name-button {
+.list-item-name-button {
   font: inherit;
   color: inherit;
   text-align: left;
@@ -98,7 +97,7 @@
   cursor: pointer;
 }
 
-.shopping-item-name-button:hover {
+.list-item-name-button:hover {
   text-decoration: underline;
 }
 
@@ -265,7 +264,7 @@
   color: var(--stamp);
 }
 
-.shopping-item-remove {
+.list-item-remove {
   flex-shrink: 0;
   font-size: 20px;
   line-height: 1;
@@ -277,13 +276,13 @@
 }
 
 @media (max-width: 600px) {
-  .shopping-item-remove {
+  .list-item-remove {
     font-size: 22px;
     padding: 6px 8px;
   }
 }
 
-.shopping-item-remove:hover {
+.list-item-remove:hover {
   color: var(--stamp);
 }
 

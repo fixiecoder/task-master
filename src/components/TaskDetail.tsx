@@ -1,20 +1,24 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { Task, TaskStatus, TaskDateEntry, TaskDateType } from '../types';
+import { Link } from 'react-router-dom';
+import type { ListType, Task, TaskStatus, TaskDateEntry, TaskDateType } from '../types';
 import {
   TASK_STATUSES,
   sendTaskChatMessage,
   listTaskConversations,
   getTaskConversation,
   queueUpdateTask,
+  createList,
   type ChatMessage,
   type ConversationSummary,
 } from '../api';
 import { DATE_TYPE_LABELS, formatDuration, withDateStamp } from '../taskDates';
 import { usePersistedState } from '../usePersistedState';
 import { useProjects } from '../useProjects';
+import { useLists } from '../useLists';
 import { createProject } from '../api';
-import { ShoppingListSection } from './ShoppingListSection';
+import { ListItemsPanel } from './ListItemsPanel';
+import { ListModal } from './ListModal';
 import { TaskDateModal } from './TaskDateModal';
 import { ProjectModal } from './ProjectModal';
 import { BrainIcon } from '../icons';
@@ -109,6 +113,13 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const { projects, setProjects } = useProjects();
 
+  const [listId, setListId] = useState<string | null>(task.listId ?? null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [isNewListModalOpen, setIsNewListModalOpen] = useState(false);
+  const { lists, setLists } = useLists();
+  const linkableLists = lists.filter((l) => l.type !== 'stock');
+  const linkedList = lists.find((l) => l.id === listId) ?? null;
+
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = usePersistedState(`task-master:chat-draft:${task.id}`, '');
@@ -160,6 +171,24 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
     setProjects((prev) => [...prev, { ...project, taskCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)));
     setProjectId(project.id);
     setIsNewProjectModalOpen(false);
+  }
+
+  function persistListId(next: string | null) {
+    const previous = listId;
+    setListId(next);
+    setListError(null);
+    queueUpdateTask(task, { listId: next }, () => {
+      setListId(previous);
+      setListError("Couldn't update the linked list — try again.");
+    });
+    onTasksChanged();
+  }
+
+  async function handleCreateListFromPicker(name: string, type: ListType) {
+    const list = await createList(name, type);
+    setLists((prev) => [...prev, { ...list, itemCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)));
+    persistListId(list.id);
+    setIsNewListModalOpen(false);
   }
 
   function handleClose() {
@@ -367,7 +396,33 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
           </button>
         </div>
 
-        <ShoppingListSection taskId={task.id} taskTitle={task.title} />
+        <div className="task-detail-list">
+          <div className="task-detail-list-row">
+            <span className="task-detail-list-label">List</span>
+            <select
+              className="task-detail-list-select"
+              value={listId ?? ''}
+              onChange={(e) => {
+                if (e.target.value === '__new__') {
+                  setIsNewListModalOpen(true);
+                  return;
+                }
+                persistListId(e.target.value || null);
+              }}
+            >
+              <option value="">None</option>
+              {linkableLists.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+              <option value="__new__">+ New list…</option>
+            </select>
+            {linkedList && (
+              <Link to={`/lists/${linkedList.id}`} className="link-button">Open list ↗</Link>
+            )}
+          </div>
+          {listError && <p className="task-detail-dates-error">{listError}</p>}
+          {linkedList && <ListItemsPanel list={linkedList} />}
+        </div>
 
         <div className={`task-detail-notes ${isOnline && isChatOpen ? 'notes-collapsed' : ''}`}>
           <div className="task-detail-notes-header">
@@ -541,6 +596,13 @@ export function TaskDetail({ task, onClose, onSave, onDelete, onTasksChanged, is
         <ProjectModal
           onClose={() => setIsNewProjectModalOpen(false)}
           onSave={handleCreateProjectFromPicker}
+        />
+      )}
+
+      {isNewListModalOpen && (
+        <ListModal
+          onClose={() => setIsNewListModalOpen(false)}
+          onSave={handleCreateListFromPicker}
         />
       )}
     </div>

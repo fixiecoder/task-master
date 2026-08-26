@@ -1,7 +1,7 @@
 import { getIdToken } from 'firebase/auth';
-import { collection, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query, where, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import type { Project, ProjectWithCount, ShoppingCategory, ShoppingItem, Task, TaskStatus } from './types';
+import type { List, ListItem, ListType, ListWithItemCount, Project, ProjectWithCount, ShoppingCategory, Task, TaskStatus } from './types';
 import {
   cacheTask,
   cacheTasks,
@@ -10,10 +10,14 @@ import {
   getCachedTasks,
   cacheProjects,
   getCachedProjects,
-  cacheShoppingItem,
-  cacheShoppingItems,
-  getCachedShoppingItems,
-  deleteCachedShoppingItem,
+  cacheList,
+  cacheLists,
+  getCachedLists,
+  deleteCachedList,
+  cacheListItem,
+  cacheListItems,
+  getCachedListItems,
+  deleteCachedListItem,
 } from './db';
 import { syncWithRetry } from './syncQueue';
 
@@ -110,7 +114,7 @@ export async function createTask(title: string, notes?: string, projectId?: stri
 
 export async function updateTask(
   id: string,
-  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>,
+  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId' | 'listId'>>,
 ): Promise<Task> {
   const res = await apiFetch(`/tasks/${id}`, {
     method: 'PUT',
@@ -161,6 +165,7 @@ export function queueCreateTask(
     dates: initialUpdates?.dates ?? [],
     estimatedMinutes: null,
     projectId,
+    listId: null,
     source: null,
     createdAt: now,
     updatedAt: now,
@@ -180,7 +185,7 @@ export function queueCreateTask(
 
 export function queueUpdateTask(
   current: Task,
-  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>,
+  updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId' | 'listId'>>,
   onGiveUp: () => void,
 ): Task {
   const optimistic: Task = { ...current, ...updates };
@@ -374,208 +379,304 @@ export const CATEGORY_LABELS: Record<ShoppingCategory, string> = {
   other: 'Other',
 };
 
-export async function listShoppingItems(taskId?: string): Promise<ShoppingItem[]> {
+export async function getList(id: string): Promise<List> {
   if (!navigator.onLine) {
-    const cached = await getCachedShoppingItems();
-    return taskId ? cached.filter((i) => i.taskId === taskId) : cached;
+    const cached = (await getCachedLists<List>()).find((l) => l.id === id);
+    if (cached) return cached;
+    throw new Error('getList failed: offline and not cached');
   }
 
   try {
-    const path = taskId ? `/shopping-items?taskId=${encodeURIComponent(taskId)}` : '/shopping-items';
-    const res = await apiFetch(path);
-    if (!res.ok) throw new Error(`listShoppingItems failed: ${res.status}`);
-    const data = await res.json() as { items: ShoppingItem[] };
-    if (!taskId) await cacheShoppingItems(data.items);
-    return data.items;
+    const res = await apiFetch(`/lists/${id}`);
+    if (!res.ok) throw new Error(`getList failed: ${res.status}`);
+    const list = await res.json() as List;
+    await cacheList(list);
+    return list;
   } catch (err) {
-    const cached = await getCachedShoppingItems();
-    const filtered = taskId ? cached.filter((i) => i.taskId === taskId) : cached;
-    if (filtered.length > 0) return filtered;
+    const cached = (await getCachedLists<List>()).find((l) => l.id === id);
+    if (cached) return cached;
     throw err;
   }
 }
 
-// Live-syncs the signed-in user's shopping items, same pattern as
-// subscribeToTasks: REST writes land in this collection and this listener
-// picks them up immediately, across the aggregate Shopping view and any
-// open task's list. Every snapshot is also written through to the local
-// cache so the list survives a reload while offline.
-export function subscribeToShoppingItems(
-  onChange: (items: ShoppingItem[]) => void,
+export async function listLists(): Promise<ListWithItemCount[]> {
+  if (!navigator.onLine) return getCachedLists<ListWithItemCount>();
+
+  try {
+    const res = await apiFetch('/lists');
+    if (!res.ok) throw new Error(`listLists failed: ${res.status}`);
+    const data = await res.json() as { lists: ListWithItemCount[] };
+    await cacheLists(data.lists);
+    return data.lists;
+  } catch (err) {
+    const cached = await getCachedLists<ListWithItemCount>();
+    if (cached.length > 0) return cached;
+    throw err;
+  }
+}
+
+// Live-syncs the signed-in user's lists across devices, same pattern as
+// subscribeToTasks/subscribeToProjects.
+export function subscribeToLists(
+  onChange: (lists: List[]) => void,
   onError: (err: unknown) => void,
 ): Unsubscribe {
   const user = auth.currentUser;
   if (!user) throw new Error('Not authenticated');
 
+  const listsQuery = query(
+    collection(db, 'users', user.uid, 'lists'),
+    orderBy('name'),
+  );
+
+  return onSnapshot(
+    listsQuery,
+    (snapshot) => {
+      const lists = snapshot.docs.map((doc) => doc.data() as List);
+      cacheLists(lists);
+      onChange(lists);
+    },
+    onError,
+  );
+}
+
+export async function createList(name: string, type: ListType): Promise<List> {
+  const res = await apiFetch('/lists', {
+    method: 'POST',
+    body: JSON.stringify({ name, type }),
+  });
+  if (!res.ok) throw new Error(`createList failed: ${res.status}`);
+  const list = await res.json() as List;
+  await cacheList(list);
+  return list;
+}
+
+export async function renameList(id: string, name: string): Promise<List> {
+  const res = await apiFetch(`/lists/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`renameList failed: ${res.status}`);
+  const list = await res.json() as List;
+  await cacheList(list);
+  return list;
+}
+
+export async function deleteList(id: string): Promise<{ tasksAffected: number }> {
+  const res = await apiFetch(`/lists/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`deleteList failed: ${res.status}`);
+  await deleteCachedList(id);
+  return res.json() as Promise<{ deleted: true; tasksAffected: number }>;
+}
+
+export async function listListItems(listId: string, pairedListId?: string | null): Promise<ListItem[]> {
+  if (!navigator.onLine) {
+    const cached = await getCachedListItems();
+    const ids = [listId, pairedListId].filter((id): id is string => Boolean(id));
+    return cached.filter((i) => ids.includes(i.listId));
+  }
+
+  try {
+    const res = await apiFetch(`/lists/${listId}/items`);
+    if (!res.ok) throw new Error(`listListItems failed: ${res.status}`);
+    const data = await res.json() as { items: ListItem[] };
+    for (const item of data.items) await cacheListItem(item);
+    return data.items;
+  } catch (err) {
+    const cached = await getCachedListItems();
+    const ids = [listId, pairedListId].filter((id): id is string => Boolean(id));
+    const filtered = cached.filter((i) => ids.includes(i.listId));
+    if (filtered.length > 0) return filtered;
+    throw err;
+  }
+}
+
+// Live-syncs a list's items (and, for a shopping/stock pair, both sides at
+// once) across devices — REST writes land in this collection and this
+// listener picks them up immediately.
+export function subscribeToListItems(
+  listId: string,
+  pairedListId: string | null,
+  onChange: (items: ListItem[]) => void,
+  onError: (err: unknown) => void,
+): Unsubscribe {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const listIds = pairedListId ? [listId, pairedListId] : [listId];
   const itemsQuery = query(
-    collection(db, 'users', user.uid, 'shoppingItems'),
+    collection(db, 'users', user.uid, 'listItems'),
+    where('listId', 'in', listIds),
     orderBy('createdAt', 'desc'),
   );
 
   return onSnapshot(
     itemsQuery,
     (snapshot) => {
-      const items = snapshot.docs.map((doc) => doc.data() as ShoppingItem);
-      cacheShoppingItems(items);
+      const items = snapshot.docs.map((doc) => doc.data() as ListItem);
+      cacheListItems(items);
       onChange(items);
     },
     onError,
   );
 }
 
-// Adds one or more AI-parsed items to a task's shopping list. Pass
-// purchased: true to add straight to Materials instead (already-owned
-// items, skipping the "need to buy" list).
-export async function addShoppingItems(taskId: string, text: string, purchased = false): Promise<ShoppingItem[]> {
-  const res = await apiFetch('/shopping-items', {
+// Adds one or more AI-parsed items directly to a list.
+export async function addListItems(listId: string, text: string): Promise<ListItem[]> {
+  const res = await apiFetch(`/lists/${listId}/items`, {
     method: 'POST',
-    body: JSON.stringify({ taskId, text, purchased }),
+    body: JSON.stringify({ text }),
   });
-  if (!res.ok) throw new Error(`addShoppingItems failed: ${res.status}`);
-  const data = await res.json() as { items: ShoppingItem[] };
-  for (const item of data.items) await cacheShoppingItem(item);
+  if (!res.ok) throw new Error(`addListItems failed: ${res.status}`);
+  const data = await res.json() as { items: ListItem[] };
+  for (const item of data.items) await cacheListItem(item);
   return data.items;
 }
 
-export async function setShoppingItemCategory(id: string, category: ShoppingCategory): Promise<ShoppingItem> {
-  const res = await apiFetch(`/shopping-items/${id}`, {
+export async function setListItemCategory(id: string, category: ShoppingCategory): Promise<ListItem> {
+  const res = await apiFetch(`/list-items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ category }),
   });
-  if (!res.ok) throw new Error(`setShoppingItemCategory failed: ${res.status}`);
-  const item = await res.json() as ShoppingItem;
-  await cacheShoppingItem(item);
+  if (!res.ok) throw new Error(`setListItemCategory failed: ${res.status}`);
+  const item = await res.json() as ListItem;
+  await cacheListItem(item);
   return item;
 }
 
-export async function renameShoppingItem(id: string, name: string): Promise<ShoppingItem> {
-  const res = await apiFetch(`/shopping-items/${id}`, {
+export async function renameListItem(id: string, name: string): Promise<ListItem> {
+  const res = await apiFetch(`/list-items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ name }),
   });
-  if (!res.ok) throw new Error(`renameShoppingItem failed: ${res.status}`);
-  const item = await res.json() as ShoppingItem;
-  await cacheShoppingItem(item);
+  if (!res.ok) throw new Error(`renameListItem failed: ${res.status}`);
+  const item = await res.json() as ListItem;
+  await cacheListItem(item);
   return item;
 }
 
-export async function toggleShoppingItemPurchased(id: string, purchased: boolean): Promise<ShoppingItem> {
-  const res = await apiFetch(`/shopping-items/${id}`, {
+// Toggles a todo/checklist item's checked state (in place — no list move).
+export async function checkListItem(id: string, checked: boolean): Promise<ListItem> {
+  const res = await apiFetch(`/list-items/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ purchased }),
+    body: JSON.stringify({ checked }),
   });
-  if (!res.ok) throw new Error(`toggleShoppingItemPurchased failed: ${res.status}`);
-  const item = await res.json() as ShoppingItem;
-  await cacheShoppingItem(item);
+  if (!res.ok) throw new Error(`checkListItem failed: ${res.status}`);
+  const item = await res.json() as ListItem;
+  await cacheListItem(item);
   return item;
 }
 
-// Marks every item sharing a normalized name as purchased/unpurchased, so
-// checking off a duplicate in the aggregate Shopping view reflects across
-// every task's list that references it.
-export async function togglePurchaseGroup(normalizedName: string, purchased: boolean): Promise<void> {
-  const res = await apiFetch('/shopping-items/purchase-group', {
+// Moves a shopping/stock item to its list's paired list (checking off a
+// shopping item moves it to stock, and vice versa).
+export async function moveListItem(id: string): Promise<ListItem> {
+  const res = await apiFetch(`/list-items/${id}/move`, { method: 'POST' });
+  if (!res.ok) throw new Error(`moveListItem failed: ${res.status}`);
+  const item = await res.json() as ListItem;
+  await cacheListItem(item);
+  return item;
+}
+
+// Moves every item sharing a normalized name, within a list and its pair,
+// into the given target list.
+export async function moveListItemGroup(targetListId: string, normalizedName: string): Promise<void> {
+  const res = await apiFetch(`/lists/${targetListId}/items/move-group`, {
     method: 'POST',
-    body: JSON.stringify({ normalizedName, purchased }),
+    body: JSON.stringify({ normalizedName }),
   });
-  if (!res.ok) throw new Error(`togglePurchaseGroup failed: ${res.status}`);
-  const cached = await getCachedShoppingItems();
+  if (!res.ok) throw new Error(`moveListItemGroup failed: ${res.status}`);
+  const cached = await getCachedListItems();
   for (const item of cached) {
-    if (item.normalizedName === normalizedName) await cacheShoppingItem({ ...item, purchased });
+    if (item.normalizedName === normalizedName) await cacheListItem({ ...item, listId: targetListId });
   }
 }
 
-export async function deleteShoppingItem(id: string): Promise<void> {
-  const res = await apiFetch(`/shopping-items/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`deleteShoppingItem failed: ${res.status}`);
-  await deleteCachedShoppingItem(id);
+export async function deleteListItem(id: string): Promise<void> {
+  const res = await apiFetch(`/list-items/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`deleteListItem failed: ${res.status}`);
+  await deleteCachedListItem(id);
 }
 
 // Queued mutation wrappers — see the note above queueCreateTask. Each
 // applies its change to the cache immediately and hands the network call to
 // syncWithRetry so it survives bad/no signal and a reload while pending.
 
-export function queueToggleShoppingItemPurchased(item: ShoppingItem, purchased: boolean, onGiveUp: () => void): void {
-  cacheShoppingItem({ ...item, purchased }).catch(() => {});
-  syncWithRetry(
-    { key: `shopping-item:${item.id}`, kind: 'toggleShoppingItem', payload: { id: item.id, purchased } },
-    () => toggleShoppingItemPurchased(item.id, purchased).then(() => {}),
-    onGiveUp,
-  );
-}
-
-export function queueTogglePurchaseGroup(normalizedName: string, itemIds: string[], purchased: boolean, onGiveUp: () => void): void {
-  getCachedShoppingItems().then((cached) => {
-    for (const item of cached) {
-      if (itemIds.includes(item.id)) cacheShoppingItem({ ...item, purchased });
-    }
-  }).catch(() => {});
-  syncWithRetry(
-    { key: `shopping-group:${normalizedName}`, kind: 'togglePurchaseGroup', payload: { normalizedName, purchased } },
-    () => togglePurchaseGroup(normalizedName, purchased),
-    onGiveUp,
-  );
-}
-
 // Adds item(s) optimistically under client-generated ids, same temp-id
 // pattern as queueCreateTask.
-export function queueAddShoppingItems(taskId: string, taskTitle: string, text: string, purchased: boolean, onGiveUp: () => void): ShoppingItem[] {
+export function queueAddListItems(listId: string, text: string, onGiveUp: () => void): ListItem[] {
   const now = new Date().toISOString();
   const names = text.split(',').map((s) => s.trim()).filter(Boolean);
-  const optimisticItems: ShoppingItem[] = names.map((name) => ({
+  const optimisticItems: ListItem[] = names.map((name) => ({
     id: `temp-${crypto.randomUUID()}`,
-    taskId,
-    taskTitle,
+    listId,
     name,
     normalizedName: name.toLowerCase(),
     category: null,
-    purchased,
-    purchasedAt: purchased ? now : null,
+    checked: false,
+    checkedAt: null,
     archived: false,
     source: 'manual',
     createdAt: now,
     updatedAt: now,
   }));
-  for (const item of optimisticItems) cacheShoppingItem(item).catch(() => {});
+  for (const item of optimisticItems) cacheListItem(item).catch(() => {});
   const tempIds = optimisticItems.map((i) => i.id);
   syncWithRetry(
-    { key: `shopping-add:${tempIds.join(',')}`, kind: 'addShoppingItems', payload: { tempIds, taskId, text, purchased } },
+    { key: `list-add:${tempIds.join(',')}`, kind: 'addListItems', payload: { tempIds, listId, text } },
     async () => {
-      await addShoppingItems(taskId, text, purchased);
-      for (const tempId of tempIds) await deleteCachedShoppingItem(tempId);
+      await addListItems(listId, text);
+      for (const tempId of tempIds) await deleteCachedListItem(tempId);
     },
     onGiveUp,
   );
   return optimisticItems;
 }
 
-export function queueRenameShoppingItem(item: ShoppingItem, name: string, onGiveUp: () => void): ShoppingItem {
-  const optimistic: ShoppingItem = { ...item, name, normalizedName: name.toLowerCase() };
-  cacheShoppingItem(optimistic).catch(() => {});
+export function queueRenameListItem(item: ListItem, name: string, onGiveUp: () => void): ListItem {
+  const optimistic: ListItem = { ...item, name, normalizedName: name.toLowerCase() };
+  cacheListItem(optimistic).catch(() => {});
   syncWithRetry(
-    { key: `shopping-rename:${item.id}`, kind: 'renameShoppingItem', payload: { id: item.id, name } },
-    () => renameShoppingItem(item.id, name).then(() => {}),
+    { key: `list-item-rename:${item.id}`, kind: 'renameListItem', payload: { id: item.id, name } },
+    () => renameListItem(item.id, name).then(() => {}),
     onGiveUp,
   );
   return optimistic;
 }
 
-export function queueSetShoppingItemCategory(item: ShoppingItem, category: ShoppingCategory, onGiveUp: () => void): ShoppingItem {
-  const optimistic: ShoppingItem = { ...item, category };
-  cacheShoppingItem(optimistic).catch(() => {});
+export function queueSetListItemCategory(item: ListItem, category: ShoppingCategory, onGiveUp: () => void): ListItem {
+  const optimistic: ListItem = { ...item, category };
+  cacheListItem(optimistic).catch(() => {});
   syncWithRetry(
-    { key: `shopping-category:${item.id}`, kind: 'setShoppingItemCategory', payload: { id: item.id, category } },
-    () => setShoppingItemCategory(item.id, category).then(() => {}),
+    { key: `list-item-category:${item.id}`, kind: 'setListItemCategory', payload: { id: item.id, category } },
+    () => setListItemCategory(item.id, category).then(() => {}),
     onGiveUp,
   );
   return optimistic;
 }
 
-export function queueDeleteShoppingItem(id: string, onGiveUp: () => void): void {
-  deleteCachedShoppingItem(id).catch(() => {});
+export function queueCheckListItem(item: ListItem, checked: boolean, onGiveUp: () => void): void {
+  cacheListItem({ ...item, checked }).catch(() => {});
   syncWithRetry(
-    { key: `shopping-delete:${id}`, kind: 'deleteShoppingItem', payload: { id } },
-    () => deleteShoppingItem(id).then(() => {}),
+    { key: `list-item-check:${item.id}`, kind: 'checkListItem', payload: { id: item.id, checked } },
+    () => checkListItem(item.id, checked).then(() => {}),
+    onGiveUp,
+  );
+}
+
+export function queueMoveListItem(item: ListItem, targetListId: string, onGiveUp: () => void): void {
+  cacheListItem({ ...item, listId: targetListId }).catch(() => {});
+  syncWithRetry(
+    { key: `list-item-move:${item.id}`, kind: 'moveListItem', payload: { id: item.id } },
+    () => moveListItem(item.id).then(() => {}),
+    onGiveUp,
+  );
+}
+
+export function queueDeleteListItem(id: string, onGiveUp: () => void): void {
+  deleteCachedListItem(id).catch(() => {});
+  syncWithRetry(
+    { key: `list-item-delete:${id}`, kind: 'deleteListItem', payload: { id } },
+    () => deleteListItem(id).then(() => {}),
     onGiveUp,
   );
 }

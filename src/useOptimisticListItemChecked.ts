@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { ShoppingItem } from './types';
+import type { ListItem } from './types';
 
-// Firestore's onSnapshot listener is the source of truth for `items`, but it
-// only reflects a toggle once the backend has processed it — which can lag
-// well behind the tap on a bad connection. This overlays a locally-applied
-// `purchased` value on top of the live data so the UI updates immediately,
-// and drops the override for an item once the listener confirms it caught up.
-export function useOptimisticShoppingItems(items: ShoppingItem[]) {
+// Same pattern as useOptimisticListItemMove, but for todo/checklist items,
+// which toggle a `checked` boolean in place rather than moving between
+// lists.
+export function useOptimisticListItemChecked(items: ListItem[]) {
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -15,7 +13,7 @@ export function useOptimisticShoppingItems(items: ShoppingItem[]) {
       let changed = false;
       const next = { ...prev };
       for (const item of items) {
-        if (item.id in next && next[item.id] === item.purchased) {
+        if (item.id in next && next[item.id] === item.checked) {
           delete next[item.id];
           changed = true;
         }
@@ -25,13 +23,13 @@ export function useOptimisticShoppingItems(items: ShoppingItem[]) {
   }, [items]);
 
   const displayItems = items.map((item) =>
-    item.id in overrides ? { ...item, purchased: overrides[item.id] } : item,
+    item.id in overrides ? { ...item, checked: overrides[item.id] } : item,
   );
 
-  function setOverride(ids: string[], purchased: boolean) {
+  function setOverride(ids: string[], checked: boolean) {
     setOverrides((prev) => {
       const next = { ...prev };
-      for (const id of ids) next[id] = purchased;
+      for (const id of ids) next[id] = checked;
       return next;
     });
   }

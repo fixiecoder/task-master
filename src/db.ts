@@ -1,10 +1,11 @@
-import type { Project, ShoppingItem, Task } from './types';
+import type { List, ListItem, Project, Task } from './types';
 
 const DB_NAME = 'task-master';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const TASKS_STORE = 'tasks';
 const PROJECTS_STORE = 'projects';
-const SHOPPING_STORE = 'shoppingItems';
+const LISTS_STORE = 'lists';
+const LIST_ITEMS_STORE = 'listItems';
 const OUTBOX_STORE = 'outbox';
 
 function openDB(): Promise<IDBDatabase> {
@@ -18,8 +19,14 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(PROJECTS_STORE)) {
         db.createObjectStore(PROJECTS_STORE, { keyPath: 'id' });
       }
-      if (!db.objectStoreNames.contains(SHOPPING_STORE)) {
-        db.createObjectStore(SHOPPING_STORE, { keyPath: 'id' });
+      if (db.objectStoreNames.contains('shoppingItems')) {
+        db.deleteObjectStore('shoppingItems');
+      }
+      if (!db.objectStoreNames.contains(LISTS_STORE)) {
+        db.createObjectStore(LISTS_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(LIST_ITEMS_STORE)) {
+        db.createObjectStore(LIST_ITEMS_STORE, { keyPath: 'id' });
       }
       if (!db.objectStoreNames.contains(OUTBOX_STORE)) {
         db.createObjectStore(OUTBOX_STORE, { keyPath: 'key' });
@@ -136,11 +143,58 @@ export async function deleteCachedProject(id: string): Promise<void> {
   db.close();
 }
 
-export async function cacheShoppingItems(items: ShoppingItem[]): Promise<void> {
+export async function cacheLists<T extends List>(lists: T[]): Promise<void> {
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(SHOPPING_STORE, 'readwrite');
-    const store = tx.objectStore(SHOPPING_STORE);
+    const tx = db.transaction(LISTS_STORE, 'readwrite');
+    const store = tx.objectStore(LISTS_STORE);
+    store.clear();
+    for (const list of lists) store.put(list);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function cacheList<T extends List>(list: T): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(LISTS_STORE, 'readwrite');
+    tx.objectStore(LISTS_STORE).put(list);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function getCachedLists<T extends List>(): Promise<T[]> {
+  const db = await openDB();
+  const lists = await new Promise<T[]>((resolve, reject) => {
+    const tx = db.transaction(LISTS_STORE, 'readonly');
+    const req = tx.objectStore(LISTS_STORE).getAll();
+    req.onsuccess = () => resolve(req.result as T[]);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return lists;
+}
+
+export async function deleteCachedList(id: string): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(LISTS_STORE, 'readwrite');
+    tx.objectStore(LISTS_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function cacheListItems(items: ListItem[]): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(LIST_ITEMS_STORE, 'readwrite');
+    const store = tx.objectStore(LIST_ITEMS_STORE);
     store.clear();
     for (const item of items) store.put(item);
     tx.oncomplete = () => resolve();
@@ -149,34 +203,34 @@ export async function cacheShoppingItems(items: ShoppingItem[]): Promise<void> {
   db.close();
 }
 
-export async function cacheShoppingItem(item: ShoppingItem): Promise<void> {
+export async function cacheListItem(item: ListItem): Promise<void> {
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(SHOPPING_STORE, 'readwrite');
-    tx.objectStore(SHOPPING_STORE).put(item);
+    const tx = db.transaction(LIST_ITEMS_STORE, 'readwrite');
+    tx.objectStore(LIST_ITEMS_STORE).put(item);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
   db.close();
 }
 
-export async function getCachedShoppingItems(): Promise<ShoppingItem[]> {
+export async function getCachedListItems(): Promise<ListItem[]> {
   const db = await openDB();
-  const items = await new Promise<ShoppingItem[]>((resolve, reject) => {
-    const tx = db.transaction(SHOPPING_STORE, 'readonly');
-    const req = tx.objectStore(SHOPPING_STORE).getAll();
-    req.onsuccess = () => resolve(req.result as ShoppingItem[]);
+  const items = await new Promise<ListItem[]>((resolve, reject) => {
+    const tx = db.transaction(LIST_ITEMS_STORE, 'readonly');
+    const req = tx.objectStore(LIST_ITEMS_STORE).getAll();
+    req.onsuccess = () => resolve(req.result as ListItem[]);
     req.onerror = () => reject(req.error);
   });
   db.close();
   return items;
 }
 
-export async function deleteCachedShoppingItem(id: string): Promise<void> {
+export async function deleteCachedListItem(id: string): Promise<void> {
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(SHOPPING_STORE, 'readwrite');
-    tx.objectStore(SHOPPING_STORE).delete(id);
+    const tx = db.transaction(LIST_ITEMS_STORE, 'readwrite');
+    tx.objectStore(LIST_ITEMS_STORE).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

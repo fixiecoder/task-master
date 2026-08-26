@@ -1,0 +1,124 @@
+.lists-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+.lists-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.lists-page-header h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.lists-add-button {
+  background: var(--stamp);
+  color: var(--chalk);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lists-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lists-page-empty {
+  color: var(--chalk-dim);
+}
+
+.lists-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lists-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--board-raised);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.lists-list-name {
+  font-weight: 600;
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lists-list-name:hover {
+  text-decoration: underline;
+}
+
+.lists-list-type {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.lists-list-paired {
+  color: var(--chalk-dim);
+  font-size: 0.85em;
+}
+
+.lists-list-count {
+  color: var(--chalk-dim);
+  font-size: 0.85em;
+}
+
+.lists-list-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.list-modal-types {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.list-modal-type {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.list-modal-type.active {
+  border-color: var(--stamp);
+}
+
+.list-modal-type-label {
+  font-weight: 600;
+}
+
+.list-modal-type-hint {
+  color: var(--chalk-dim);
+  font-size: 0.85em;
+}

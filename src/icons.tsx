@@ -44,10 +44,10 @@ export const CalendarIcon = icon('CalendarIcon', (
   </>
 ));
 
-export const ShoppingIcon = icon('ShoppingIcon', (
+export const ListsIcon = icon('ListsIcon', (
   <>
-    <path d="M4 7h16l-1.4 10.3a1.5 1.5 0 0 1-1.5 1.2H6.9a1.5 1.5 0 0 1-1.5-1.2L4 7Z" />
-    <path d="M8.5 7V6a3.5 3.5 0 0 1 7 0v1" />
+    <path d="M8 6h12M8 12h12M8 18h12" />
+    <path d="M4 6h.01M4 12h.01M4 18h.01" strokeWidth={2.4} />
   </>
 ));
 

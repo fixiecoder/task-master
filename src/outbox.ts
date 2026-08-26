@@ -3,14 +3,14 @@ import {
   createTask,
   updateTask,
   deleteTask,
-  toggleShoppingItemPurchased,
-  togglePurchaseGroup,
-  addShoppingItems,
-  deleteShoppingItem,
-  renameShoppingItem,
-  setShoppingItemCategory,
+  addListItems,
+  deleteListItem,
+  renameListItem,
+  setListItemCategory,
+  checkListItem,
+  moveListItem,
 } from './api';
-import { deleteCachedShoppingItem, deleteCachedTask } from './db';
+import { deleteCachedListItem, deleteCachedTask } from './db';
 
 // One entry per `kind` a queued mutation (see the queueX wrappers in
 // api.ts) can be persisted as. Kept in sync with those wrappers' payloads —
@@ -21,12 +21,12 @@ export type OutboxMutation =
   | { kind: 'updateTask'; id: string; updates: Partial<Task> }
   | { kind: 'createTask'; tempId: string; title: string; notes: string | null; projectId: string | null; initialUpdates?: Partial<Pick<Task, 'dates' | 'status'>> }
   | { kind: 'deleteTask'; id: string }
-  | { kind: 'toggleShoppingItem'; id: string; purchased: boolean }
-  | { kind: 'togglePurchaseGroup'; normalizedName: string; purchased: boolean }
-  | { kind: 'addShoppingItems'; tempIds: string[]; taskId: string; text: string; purchased: boolean }
-  | { kind: 'deleteShoppingItem'; id: string }
-  | { kind: 'renameShoppingItem'; id: string; name: string }
-  | { kind: 'setShoppingItemCategory'; id: string; category: ShoppingCategory };
+  | { kind: 'addListItems'; tempIds: string[]; listId: string; text: string }
+  | { kind: 'deleteListItem'; id: string }
+  | { kind: 'renameListItem'; id: string; name: string }
+  | { kind: 'setListItemCategory'; id: string; category: ShoppingCategory }
+  | { kind: 'checkListItem'; id: string; checked: boolean }
+  | { kind: 'moveListItem'; id: string };
 
 export async function dispatchMutation(kind: string, payload: unknown): Promise<void> {
   const mutation = { kind, ...(payload as object) } as OutboxMutation;
@@ -43,24 +43,24 @@ export async function dispatchMutation(kind: string, payload: unknown): Promise<
     case 'deleteTask':
       await deleteTask(mutation.id);
       return;
-    case 'toggleShoppingItem':
-      await toggleShoppingItemPurchased(mutation.id, mutation.purchased);
+    case 'addListItems':
+      await addListItems(mutation.listId, mutation.text);
+      for (const tempId of mutation.tempIds) await deleteCachedListItem(tempId);
       return;
-    case 'togglePurchaseGroup':
-      await togglePurchaseGroup(mutation.normalizedName, mutation.purchased);
+    case 'deleteListItem':
+      await deleteListItem(mutation.id);
       return;
-    case 'addShoppingItems':
-      await addShoppingItems(mutation.taskId, mutation.text, mutation.purchased);
-      for (const tempId of mutation.tempIds) await deleteCachedShoppingItem(tempId);
+    case 'renameListItem':
+      await renameListItem(mutation.id, mutation.name);
       return;
-    case 'deleteShoppingItem':
-      await deleteShoppingItem(mutation.id);
+    case 'setListItemCategory':
+      await setListItemCategory(mutation.id, mutation.category);
       return;
-    case 'renameShoppingItem':
-      await renameShoppingItem(mutation.id, mutation.name);
+    case 'checkListItem':
+      await checkListItem(mutation.id, mutation.checked);
       return;
-    case 'setShoppingItemCategory':
-      await setShoppingItemCategory(mutation.id, mutation.category);
+    case 'moveListItem':
+      await moveListItem(mutation.id);
       return;
   }
 }

@@ -1,0 +1,32 @@
+.list-detail-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+.list-detail-back {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.list-detail-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.list-detail-header h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.list-detail-type {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}

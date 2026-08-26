@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { BoardIcon, CalendarIcon, ProjectsIcon, SettingsIcon, ShoppingIcon } from '../icons';
+import { BoardIcon, CalendarIcon, ListsIcon, ProjectsIcon, SettingsIcon } from '../icons';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Board', end: true, Icon: BoardIcon },
   { to: '/calendar', label: 'Calendar', end: false, Icon: CalendarIcon },
-  { to: '/shopping', label: 'Shopping', end: false, Icon: ShoppingIcon },
+  { to: '/lists', label: 'Lists', end: false, Icon: ListsIcon },
   { to: '/projects', label: 'Projects', end: false, Icon: ProjectsIcon },
   { to: '/settings', label: 'Settings', end: false, Icon: SettingsIcon },
 ];
