@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { List, ListType, ListWithItemCount } from '../types';
 import { createList } from '../api';
 import { useLists } from '../useLists';
+import { useProjects } from '../useProjects';
 import { useTasks } from '../useTasks';
 import { ListModal } from './ListModal';
 import { DeleteListModal } from './DeleteListModal';
+import { ProjectFilter, UNASSIGNED_PROJECT_FILTER } from './ProjectFilter';
 import './ListsView.css';
 
 const TYPE_LABELS: Record<ListType, string> = {
@@ -18,8 +20,37 @@ const TYPE_LABELS: Record<ListType, string> = {
 export function ListsView() {
   const { lists, setLists, isLoading, error, setError, isOnline, removeList } = useLists();
   const { tasks } = useTasks();
+  const { projects } = useProjects();
+  const projectsById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isAdding, setIsAdding] = useState(false);
   const [deletingList, setDeletingList] = useState<ListWithItemCount | null>(null);
+
+  // Empty set = no filter applied (show every list).
+  const projectFilter = useMemo(() => new Set(searchParams.getAll('project')), [searchParams]);
+  function toggleProjectFilter(id: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      const current = new Set(next.getAll('project'));
+      if (current.has(id)) current.delete(id);
+      else current.add(id);
+      next.delete('project');
+      for (const projectId of current) next.append('project', projectId);
+      return next;
+    });
+  }
+  function setProjectFilter(ids: string[]) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('project');
+      for (const projectId of ids) next.append('project', projectId);
+      return next;
+    });
+  }
+  const visibleLists = useMemo(() => {
+    if (projectFilter.size === 0) return lists;
+    return lists.filter((l) => projectFilter.has(l.projectId ?? UNASSIGNED_PROJECT_FILTER));
+  }, [lists, projectFilter]);
 
   const linkCounts = new Map<string, number>();
   for (const task of tasks) {
@@ -29,9 +60,9 @@ export function ListsView() {
 
   const listsById = new Map(lists.map((l) => [l.id, l]));
 
-  async function handleAdd(name: string, type: ListType) {
+  async function handleAdd(name: string, type: ListType, projectId: string | null) {
     try {
-      const list = await createList(name, type);
+      const list = await createList(name, type, projectId);
       // The paired stock list (if any) is created server-side alongside the
       // shopping list — the live listener picks it up moments later.
       setLists((prev) => {
@@ -75,6 +106,12 @@ export function ListsView() {
 
       <div className="lists-page-header">
         <h2>Lists</h2>
+        <ProjectFilter
+          projects={projects}
+          selected={projectFilter}
+          onToggle={toggleProjectFilter}
+          onSetAll={setProjectFilter}
+        />
         <button type="button" className="lists-add-button" onClick={() => setIsAdding(true)} disabled={!isOnline}>
           + New list
         </button>
@@ -82,12 +119,21 @@ export function ListsView() {
 
       {isLoading ? (
         <p className="board-loading">Loading lists…</p>
-      ) : lists.length === 0 ? (
-        <p className="lists-page-empty">No lists yet — create one to get started.</p>
+      ) : visibleLists.length === 0 ? (
+        <p className="lists-page-empty">
+          {lists.length === 0 ? 'No lists yet — create one to get started.' : 'No lists match this filter.'}
+        </p>
       ) : (
         <ul className="lists-list">
-          {lists.map((list) => (
+          {visibleLists.map((list) => (
             <li key={list.id} className="lists-list-item">
+              {list.projectId && (
+                <span
+                  className="lists-list-project-dot"
+                  style={{ backgroundColor: projectsById.get(list.projectId)?.color ?? 'var(--chalk-dim)' }}
+                  title={projectsById.get(list.projectId)?.name}
+                />
+              )}
               <Link to={`/lists/${list.id}`} className="lists-list-name">{list.name}</Link>
               <span className="lists-list-type">{TYPE_LABELS[list.type]}</span>
               {pairedName(list) && (

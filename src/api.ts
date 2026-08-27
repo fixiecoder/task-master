@@ -440,10 +440,14 @@ export function subscribeToLists(
   );
 }
 
-export async function createList(name: string, type: ListType): Promise<List> {
+export async function createList(
+  name: string,
+  type: ListType,
+  projectId: string | null = null,
+): Promise<List> {
   const res = await apiFetch('/lists', {
     method: 'POST',
-    body: JSON.stringify({ name, type }),
+    body: JSON.stringify({ name, type, projectId }),
   });
   if (!res.ok) throw new Error(`createList failed: ${res.status}`);
   const list = await res.json() as List;
@@ -451,12 +455,15 @@ export async function createList(name: string, type: ListType): Promise<List> {
   return list;
 }
 
-export async function renameList(id: string, name: string): Promise<List> {
+export async function updateList(
+  id: string,
+  updates: { name?: string; projectId?: string | null },
+): Promise<List> {
   const res = await apiFetch(`/lists/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error(`renameList failed: ${res.status}`);
+  if (!res.ok) throw new Error(`updateList failed: ${res.status}`);
   const list = await res.json() as List;
   await cacheList(list);
   return list;

@@ -52,6 +52,7 @@ export interface List {
   // Symmetric link between a `shopping` list and its auto-created `stock`
   // list. Null for todo/checklist lists, which never pair.
   pairedListId: string | null;
+  projectId: string | null;
   createdAt: unknown;
   updatedAt: unknown;
 }

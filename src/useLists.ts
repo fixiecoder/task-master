@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ListWithItemCount } from './types';
-import { deleteList, listLists, renameList, subscribeToLists } from './api';
+import { deleteList, listLists, subscribeToLists, updateList } from './api';
 import { useOnlineStatus } from './useOnlineStatus';
 
 // Mirrors useProjects.ts: a live Firestore subscription while online,
@@ -49,8 +49,8 @@ export function useLists() {
     return unsubscribe;
   }, [isOnline, refresh]);
 
-  async function saveList(id: string, name: string) {
-    const updated = await renameList(id, name);
+  async function saveList(id: string, updates: { name?: string; projectId?: string | null }) {
+    const updated = await updateList(id, updates);
     setLists((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)));
   }
 
