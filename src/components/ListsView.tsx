@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { List, ListType, ListWithItemCount } from '../types';
 import { createList } from '../api';
@@ -51,6 +51,20 @@ export function ListsView() {
     if (projectFilter.size === 0) return lists;
     return lists.filter((l) => projectFilter.has(l.projectId ?? UNASSIGNED_PROJECT_FILTER));
   }, [lists, projectFilter]);
+
+  // `?new=list` (paired with `?project=<id>`, which already doubles as the
+  // filter) is a cross-app deep link — e.g. from the dashboard's project
+  // "Add" button — that opens the new-list modal pre-scoped to a project.
+  useEffect(() => {
+    if (searchParams.get('new') !== 'list') return;
+    setIsAdding(true);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('new');
+      return next;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const linkCounts = new Map<string, number>();
   for (const task of tasks) {
@@ -155,7 +169,13 @@ export function ListsView() {
         </ul>
       )}
 
-      {isAdding && <ListModal onClose={() => setIsAdding(false)} onSave={handleAdd} />}
+      {isAdding && (
+        <ListModal
+          onClose={() => setIsAdding(false)}
+          onSave={handleAdd}
+          defaultProjectId={projectFilter.size > 0 ? [...projectFilter][0] : null}
+        />
+      )}
 
       {deletingList && (
         <DeleteListModal

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Task } from '../types';
 import { queueCreateTask, queueUpdateTask } from '../api';
 import { useTasks } from '../useTasks';
 import { useProjects } from '../useProjects';
 import { KanbanColumn, type ColumnId } from './KanbanColumn';
+import { QuickAddTaskModal } from './QuickAddTaskModal';
 import { TaskDetail } from './TaskDetail';
 import { StartDatePromptModal } from './StartDatePromptModal';
 import { ProjectFilter, UNASSIGNED_PROJECT_FILTER } from './ProjectFilter';
@@ -71,6 +72,21 @@ export function KanbanBoard() {
   const [touchDragOverColumn, setTouchDragOverColumn] = useState<ColumnId | null>(null);
   const [startDatePromptTaskId, setStartDatePromptTaskId] = useState<string | null>(null);
 
+  // `?new=task` (paired with `?project=<id>`, which already doubles as the
+  // filter) is a cross-app deep link — e.g. from the dashboard's project
+  // "Add" button — that opens the quick-add modal pre-scoped to a project.
+  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
+  useEffect(() => {
+    if (searchParams.get('new') !== 'task') return;
+    setIsQuickAddModalOpen(true);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('new');
+      return next;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function applyDrop(task: Task, updates: Partial<Pick<Task, 'status' | 'dates'>>) {
     const optimistic = queueUpdateTask(task, updates, () => {
       setError('Could not move that task — try again.');
@@ -116,6 +132,13 @@ export function KanbanBoard() {
   function handleQuickAdd(title: string) {
     const task = queueCreateTask(title, null, null, () => setError('Could not create that task — try again.'));
     setTasks((prev) => [task, ...prev]);
+  }
+
+  function handleQuickAddModalSave(title: string) {
+    const deepLinkProjectId = projectFilter.size > 0 ? [...projectFilter][0] : null;
+    const task = queueCreateTask(title, null, deepLinkProjectId, () => setError('Could not create that task — try again.'));
+    setTasks((prev) => [task, ...prev]);
+    setIsQuickAddModalOpen(false);
   }
 
   function handleSaveTask(id: string, updates: Partial<Pick<Task, 'title' | 'status' | 'notes' | 'dates' | 'estimatedMinutes' | 'projectId'>>) {
@@ -168,6 +191,13 @@ export function KanbanBoard() {
             />
           ))}
         </div>
+      )}
+
+      {isQuickAddModalOpen && (
+        <QuickAddTaskModal
+          onClose={() => setIsQuickAddModalOpen(false)}
+          onSave={handleQuickAddModalSave}
+        />
       )}
 
       {startDatePromptTask && (
